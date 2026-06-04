@@ -1,43 +1,42 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package multiservicioRafael.invenatario.CodigoFuente;
 
-/**
- *
- * @author jose
- */
-class Usuario {
-    private Trabajador tarbajador;
-    private String usuario="jose";
-    private String password="74622233";
-    private String estado;
+import java.util.List;
+
+public class Usuario extends Trabajador {
+
+    private String username;
+    private String password;
+    private String rol;
+    private String[]accesoMenu;
 
     public Usuario() {
+        super();
+    }
+
+    public Usuario(String username, String rol, String[] accesoMenu, String nombre, String apellido_materno, String apellido_paterno) {
+        super(nombre, apellido_materno, apellido_paterno);
+        this.username = username;
+        this.rol = rol;
+        this.accesoMenu = accesoMenu;
     }
     
-    public Usuario(Trabajador tarbajador, String usuario, String password, String estado) {
-        this.tarbajador = tarbajador;
-        this.usuario = usuario;
+    public Usuario(String username, String password, String rol, String[] accesoMenu, String documento, String numeroDocumento, String nombre, String apellido_materno, String apellido_paterno, String celular, String correo, String direccion, String cargo, String estado) {
+        super(documento, numeroDocumento, nombre, apellido_materno, apellido_paterno, celular, correo, direccion, cargo, estado);
+        this.username = username;
         this.password = password;
-        this.estado = estado;
+        this.rol = rol;
+        this.accesoMenu = accesoMenu;
     }
 
-    public Trabajador getTarbajador() {
-        return tarbajador;
+    
+
+    // Getters y Setters
+    public String getUsername() {
+        return username;
     }
 
-    public void setTarbajador(Trabajador tarbajador) {
-        this.tarbajador = tarbajador;
-    }
-
-    public String getUsuario() {
-        return usuario;
-    }
-
-    public void setUsuario(String usuario) {
-        this.usuario = usuario;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getPassword() {
@@ -48,12 +47,22 @@ class Usuario {
         this.password = password;
     }
 
-    public String getEstado() {
-        return estado;
+    public String[] getAccesoMenu() {
+        return accesoMenu;
     }
 
-    public void setEstado(String estado) {
-        this.estado = estado;
+    public void setAccesoMenu(String[] accesoMenu) {
+        this.accesoMenu = accesoMenu;
     }
+
     
+
+    public String getRol() {
+        return rol;
+    }
+
+    public void setRol(String rol) {
+        this.rol = rol;
+    }
+
 }

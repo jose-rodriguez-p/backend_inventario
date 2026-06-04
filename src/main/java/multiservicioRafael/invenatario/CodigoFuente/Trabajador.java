@@ -1,42 +1,60 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package multiservicioRafael.invenatario.CodigoFuente;
 
-/**
- *
- * @author jose
- */
-class Trabajador {
+
+
+public class Trabajador {
+
     private String documento;
     private String numeroDocumento;
     private String nombre;
-    private String apellidoMaterno;
-    private String apellidoPaterno;
+    private String apellido_materno;
+    private String apellido_paterno;
     private String celular;
     private String correo;
     private String direccion;
     private String cargo;
     private String estado;
+    private String fecha;
+    private String hora;
 
     public Trabajador() {
     }
 
-    
-    public Trabajador(String documento, String numeroDocumento, String nombre, String apellidoMaterno, String apellidoPaterno, String celular, String correo, String direccion, String cargo, String estado) {
+    public Trabajador(String numeroDocumento, String nombre, String apellido_materno, String apellido_paterno, String celular, String correo, String cargo, String estado,String fecha,String hora ) {
+        this.numeroDocumento = numeroDocumento;
+        this.nombre = nombre;
+        this.apellido_materno = apellido_materno;
+        this.apellido_paterno = apellido_paterno;
+        this.celular = celular;
+        this.correo = correo;
+        this.cargo = cargo;
+        this.estado = estado;
+        this.fecha=fecha;
+        this.hora=hora;
+    }
+
+    public Trabajador(String nombre, String apellido_materno, String apellido_paterno) {
+        this.nombre = nombre;
+        this.apellido_materno = apellido_materno;
+        this.apellido_paterno = apellido_paterno;
+    }
+
+    public Trabajador(String documento, String numeroDocumento, String nombre, String apellido_materno, String apellido_paterno, String celular, String correo, String direccion, String cargo, String estado, String fecha, String hora) {
         this.documento = documento;
         this.numeroDocumento = numeroDocumento;
         this.nombre = nombre;
-        this.apellidoMaterno = apellidoMaterno;
-        this.apellidoPaterno = apellidoPaterno;
+        this.apellido_materno = apellido_materno;
+        this.apellido_paterno = apellido_paterno;
         this.celular = celular;
         this.correo = correo;
         this.direccion = direccion;
         this.cargo = cargo;
         this.estado = estado;
+        this.fecha = fecha;
+        this.hora = hora;
     }
 
+    // Getters y Setters
     public String getDocumento() {
         return documento;
     }
@@ -61,20 +79,20 @@ class Trabajador {
         this.nombre = nombre;
     }
 
-    public String getApellidoMaterno() {
-        return apellidoMaterno;
+    public String getApellido_materno() {
+        return apellido_materno;
     }
 
-    public void setApellidoMaterno(String apellidoMaterno) {
-        this.apellidoMaterno = apellidoMaterno;
+    public void setApellido_materno(String apellido_materno) {
+        this.apellido_materno = apellido_materno;
     }
 
-    public String getApellidoPaterno() {
-        return apellidoPaterno;
+    public String getApellido_paterno() {
+        return apellido_paterno;
     }
 
-    public void setApellidoPaterno(String apellidoPaterno) {
-        this.apellidoPaterno = apellidoPaterno;
+    public void setApellido_paterno(String apellido_paterno) {
+        this.apellido_paterno = apellido_paterno;
     }
 
     public String getCelular() {
@@ -116,5 +134,30 @@ class Trabajador {
     public void setEstado(String estado) {
         this.estado = estado;
     }
+
+    public String getFecha() {
+        return fecha;
+    }
+
+    public void setFecha(String fecha) {
+        this.fecha = fecha;
+    }
+
+    public String getHora() {
+        return hora;
+    }
+
+    public void setHora(String hora) {
+        this.hora = hora;
+    }
+
     
+
+    @Override
+    public String toString() {
+        return "Trabajador{" + "documento=" + documento + ", numeroDocumento=" + numeroDocumento + ", nombre=" + nombre + ", apellido_materno=" + apellido_materno + ", apellido_paterno=" + apellido_paterno + ", celular=" + celular + ", correo=" + correo + ", direccion=" + direccion + ", cargo=" + cargo + ", estado=" + estado + ", fecha=" + fecha + ", hora=" + hora + '}';
+    }
+    
+    
+
 }

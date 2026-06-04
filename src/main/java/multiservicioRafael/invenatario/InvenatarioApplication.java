@@ -4,7 +4,6 @@ import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import multiservicioRafael.invenatario.controladores.ControladorLogin;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -13,7 +12,6 @@ public class InvenatarioApplication {
     public static void main(String[] args) {
         System.setProperty("java.awt.headless", "false");
 	SpringApplication.run(InvenatarioApplication.class, args);
-        ControladorLogin controlador=new ControladorLogin();
         abrirNavegador("http://localhost:4200");
     }
     public static void abrirNavegador(String url) {
