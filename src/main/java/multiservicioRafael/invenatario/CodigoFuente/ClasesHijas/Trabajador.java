@@ -1,4 +1,4 @@
-package multiservicioRafael.invenatario.CodigoFuente;
+package multiservicioRafael.invenatario.CodigoFuente.ClasesHijas;
 
 
 

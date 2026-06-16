@@ -1,4 +1,4 @@
-package multiservicioRafael.invenatario.CodigoFuente;
+package multiservicioRafael.invenatario.CodigoFuente.ClasesHijas;
 
 public class Proveedor {
     private String ruc;
@@ -32,4 +32,10 @@ public class Proveedor {
     public void setDireccion(String direccion) { this.direccion = direccion; }
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
+
+    @Override
+    public String toString() {
+        return "Proveedor{" + "ruc=" + ruc + ", nombre_empresa=" + nombre_empresa + ", celular=" + celular + ", correo=" + correo + ", direccion=" + direccion + ", estado=" + estado + '}';
+    }
+    
 }

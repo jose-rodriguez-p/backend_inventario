@@ -1,41 +1,60 @@
 package multiservicioRafael.invenatario.CodigoFuente.ModuloCorreo;
 
-import com.resend.Resend;
-import com.resend.services.emails.model.CreateEmailOptions;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 
 import multiservicioRafael.invenatario.CodigoFuente.Patrones.RegistroCodigosVerificacion;
 
 public class ServicioCorreo {
 
     private static ServicioCorreo instancia;
-    private final Resend resend;
     private final Properties config;
+    private final Session session;
 
     private ServicioCorreo() {
         config = cargarConfiguracion();
-        String apiKey = config.getProperty("resend.api.key");
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new RuntimeException("Falta configurar resend.api.key");
+        
+        if (config.getProperty("brevo.smtp.user") == null || config.getProperty("brevo.smtp.password") == null) {
+            throw new RuntimeException("Falta configurar las credenciales de Brevo en application.properties");
         }
-        resend = new Resend(apiKey);
+
+        Properties smtpProps = new Properties();
+        smtpProps.put("mail.smtp.auth", "true");
+        smtpProps.put("mail.smtp.starttls.enable", "true");
+        smtpProps.put("mail.smtp.host", config.getProperty("brevo.smtp.host", "smtp-relay.brevo.com"));
+        smtpProps.put("mail.smtp.port", config.getProperty("brevo.smtp.port", "587"));
+
+        this.session = Session.getInstance(smtpProps, new javax.mail.Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(
+                    config.getProperty("brevo.smtp.user"),
+                    config.getProperty("brevo.smtp.password")
+                );
+            }
+        });
     }
 
     public static ServicioCorreo getInstancia() {
         if (instancia == null) {
-            instancia= new ServicioCorreo();
+            instancia = new ServicioCorreo();
         }
-
         return instancia;
     }
 
-    public boolean enviarCodigoVerificacion( String correoDestino, String codigo) {
+    public boolean enviarCodigoVerificacion(String correoDestino, String codigo) {
         try {
-            int minutos= RegistroCodigosVerificacion.getInstancia().getMinutosValidez();
-            String remitente= config.getProperty("resend.from","Multiservicio Rafael <onboarding@resend.dev>");
+            int minutos = RegistroCodigosVerificacion.getInstancia().getMinutosValidez();
+            String remitente = config.getProperty("brevo.smtp.from", "rodriguezpenajosemanuel62@gmail.com");
+            
             String html = """
                 <div style="
                 max-width:600px;
@@ -103,40 +122,34 @@ public class ServicioCorreo {
                     </p>
 
                 </div>
-                """.formatted(
-                    codigo,
-                    minutos
-            );
-            CreateEmailOptions request= CreateEmailOptions.builder()
-                            .from(remitente)
-                            .to(correoDestino)
-                            .subject(
-                                    "🔐 Código de verificación"
-                            )
-                            .html(html)
-                            .build();
-            resend.emails().send(request);
+                """.formatted(codigo, minutos);
+
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(remitente, "Multiservicios Rafael"));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(correoDestino));
+            message.setSubject("🔐 Código de verificación");
+            message.setContent(html, "text/html; charset=utf-8");
+
+            Transport.send(message);
             return true;
 
         } catch (Exception e) {
-
-            System.err.println("Error enviando correo: "+ e.getMessage());
+            System.err.println("Error enviando correo con Brevo: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
 
     private Properties cargarConfiguracion() {
-
-        Properties properties= new Properties();
-        try (InputStream input= Thread.currentThread().getContextClassLoader().getResourceAsStream("application.properties")) {
-                    if (input == null) {
-                        throw new RuntimeException("No se encontró application.properties");
-                    }
-                    properties.load(input );
-                    return properties;
-                } catch (IOException e) {
-                    throw new RuntimeException("Error cargando configuración",e
-                    );
-                }
+        Properties properties = new Properties();
+        try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("application.properties")) {
+            if (input == null) {
+                throw new RuntimeException("No se encontró application.properties");
+            }
+            properties.load(input);
+            return properties;
+        } catch (IOException e) {
+            throw new RuntimeException("Error cargando configuración", e);
+        }
     }
 }

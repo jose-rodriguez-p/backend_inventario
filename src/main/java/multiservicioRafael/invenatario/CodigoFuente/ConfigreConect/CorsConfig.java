@@ -1,4 +1,4 @@
-package multiservicioRafael.invenatario.CodigoFuente;
+package multiservicioRafael.invenatario.CodigoFuente.ConfigreConect;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

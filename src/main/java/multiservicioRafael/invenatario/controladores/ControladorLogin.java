@@ -1,7 +1,7 @@
 package multiservicioRafael.invenatario.controladores;
 
 import multiservicioRafael.invenatario.CodigoFuente.Sistema;
-import multiservicioRafael.invenatario.CodigoFuente.Usuario;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Usuario;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;

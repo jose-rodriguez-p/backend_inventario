@@ -1,7 +1,7 @@
 package multiservicioRafael.invenatario.controladores;
 
 import multiservicioRafael.invenatario.CodigoFuente.Sistema;
-import multiservicioRafael.invenatario.CodigoFuente.Producto;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Producto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
