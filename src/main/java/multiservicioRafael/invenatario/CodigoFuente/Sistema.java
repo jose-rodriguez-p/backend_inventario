@@ -167,7 +167,6 @@ public class Sistema {
         boolean valido = RegistroCodigosVerificacion.getInstancia().validar(usuario, codigo.trim());
         return valido ? "CODIGO_VALIDO" : "CODIGO_INVALIDO";
     }
-    
 
     public boolean actualizarContrasena(String usuario, String nuevaContrasena) {
         if (!RegistroCodigosVerificacion.getInstancia().estaValidado(usuario)) {
@@ -187,28 +186,34 @@ public class Sistema {
     public String nuevoTrabajador(Map<String, Object> datos) {
         TrabajadorDao trabajadorDao = new TrabajadorDao();
         Trabajador t = new Trabajador();
-        t.setNumeroDocumento(String.valueOf(datos.getOrDefault("numeroDocumento", "")).trim());
-        t.setNombre(String.valueOf(datos.getOrDefault("nombre", "")).trim());
-        t.setApellido_paterno(String.valueOf(datos.getOrDefault("apellido_paterno", "")).trim());
-        t.setApellido_materno(String.valueOf(datos.getOrDefault("apellido_materno", "")).trim());
-        t.setCelular(String.valueOf(datos.getOrDefault("celular", "")).trim());
-        t.setCorreo(String.valueOf(datos.getOrDefault("correo", "")).trim());
-        t.setDireccion(String.valueOf(datos.getOrDefault("direccion", "")).trim());
-        t.setDocumento(String.valueOf(datos.getOrDefault("nombre_documento", "DNI")).trim());
-        t.setCargo(String.valueOf(datos.getOrDefault("nombre_cargo", "")).trim());
-        t.setEstado(String.valueOf(datos.getOrDefault("estado", "Activo")).trim());
-
-        String usuarioAcceso = datos.get("usuario") != null ? String.valueOf(datos.get("usuario")).trim() : null;
+        t.setNumeroDocumento(obtenerStringSeguro(datos.get("numeroDocumento"), ""));
+        t.setNombre(obtenerStringSeguro(datos.get("nombre"), ""));
+        t.setApellido_paterno(obtenerStringSeguro(datos.get("apellido_paterno"), ""));
+        t.setApellido_materno(obtenerStringSeguro(datos.get("apellido_materno"), ""));
+        t.setCelular(obtenerStringSeguro(datos.get("celular"), ""));
+        t.setCorreo(obtenerStringSeguro(datos.get("correo"), ""));
+        t.setDireccion(obtenerStringSeguro(datos.get("direccion"), ""));
+        t.setDocumento(obtenerStringSeguro(datos.get("nombre_documento"), "DNI"));
+        t.setCargo(obtenerStringSeguro(datos.get("nombre_cargo"), ""));
+        t.setEstado(obtenerStringSeguro(datos.get("estado"), "Activo"));
+        String usuarioAcceso = obtenerStringSeguro(datos.get("usuario"), null);
         String contrasena = datos.get("contrasena") != null ? String.valueOf(datos.get("contrasena")) : null;
-        String usuarioLogueado = datos.get("usuarioLogueado") != null
-                ? String.valueOf(datos.get("usuarioLogueado")).trim()
-                : this.usuario;
-
+        if (contrasena != null && contrasena.trim().isEmpty()) {
+            contrasena = null;
+        }
+        String usuarioLogueado = obtenerStringSeguro(datos.get("usuarioLogueado"), this.usuario);
         if (usuarioLogueado == null || usuarioLogueado.isBlank()) {
             return "error_usuario_logueado_no_existe";
         }
-
         return trabajadorDao.agregarTranbajador(t, usuarioAcceso, contrasena, usuarioLogueado);
+    }
+
+    private String obtenerStringSeguro(Object valor, String valorDefecto) {
+        if (valor == null) {
+            return valorDefecto;
+        }
+        String resultado = String.valueOf(valor).trim();
+        return resultado.isEmpty() ? valorDefecto : resultado;
     }
 
     public boolean existeDniTrabajador(String dni) {
@@ -242,26 +247,28 @@ public class Sistema {
     }
 
     public String actualizarTrabajador(String dni, Map<String, Object> datosActualizados) {
-
-        Trabajador t = new Trabajador();
         TrabajadorDao trabajadorDao = new TrabajadorDao();
+        Trabajador t = new Trabajador();
+        t.setNumeroDocumento(dni != null ? dni.trim() : "");
+        t.setNombre(datosActualizados.get("nombre") != null ? String.valueOf(datosActualizados.get("nombre")).trim() : "");
+        t.setApellido_paterno(datosActualizados.get("apellido_paterno") != null ? String.valueOf(datosActualizados.get("apellido_paterno")).trim() : "");
+        t.setApellido_materno(datosActualizados.get("apellido_materno") != null ? String.valueOf(datosActualizados.get("apellido_materno")).trim() : "");
+        t.setCelular(datosActualizados.get("celular") != null ? String.valueOf(datosActualizados.get("celular")).trim() : "");
+        t.setCorreo(datosActualizados.get("correo") != null ? String.valueOf(datosActualizados.get("correo")).trim() : "");
+        t.setDireccion(datosActualizados.get("direccion") != null ? String.valueOf(datosActualizados.get("direccion")).trim() : "");
+        t.setCargo(datosActualizados.get("cargo") != null ? String.valueOf(datosActualizados.get("cargo")).trim() : "");
 
-        t.setNumeroDocumento(dni);
-        t.setNombre((String) datosActualizados.get("nombre"));
-        t.setApellido_paterno((String) datosActualizados.get("apellido_paterno"));
-        t.setApellido_materno((String) datosActualizados.get("apellido_materno"));
-        t.setCelular((String) datosActualizados.get("celular"));
-        t.setCorreo((String) datosActualizados.get("correo"));
-        t.setDireccion((String) datosActualizados.get("direccion"));
-        t.setCargo((String) datosActualizados.get("cargo"));
-        t.setEstado((String) datosActualizados.get("estado"));
+        String estadoForm = datosActualizados.get("estado") != null ? String.valueOf(datosActualizados.get("estado")).trim() : "";
+        t.setEstado(estadoForm.isEmpty() ? "Activo" : estadoForm);
+        String username = datosActualizados.get("usuario") != null ? String.valueOf(datosActualizados.get("usuario")).trim() : null;
+        if (username != null && username.isEmpty()) {
+            username = null;
+        }
 
-        String username = (String) datosActualizados.get("usuario");
-        String password = (String) datosActualizados.get("contrasena");
-
+        String password = datosActualizados.get("contrasena") != null ? String.valueOf(datosActualizados.get("contrasena")) : null;
         return trabajadorDao.editarTrabajador(
                 t,
-                this.usuario,
+                this.usuario, 
                 username,
                 password
         );
@@ -469,6 +476,7 @@ public class Sistema {
     // --- MÉTODOS DE PRODUCTOS ---
     /**
      * Listar productos con el nombre del proveedor (datos genéricos)
+     *
      * @return Lista de productos con información del proveedor
      */
     public List<Map<String, Object>> listarProductosConProveedor() {
@@ -499,6 +507,7 @@ public class Sistema {
 
     /**
      * Agregar un nuevo producto (datos genéricos)
+     *
      * @param datos Map con los datos del producto
      * @return "PRODUCTO_REGISTRADO" si exitoso, "error" si falla
      */
@@ -514,57 +523,61 @@ public class Sistema {
         }
     }
 
-    /**
-     * Editar un producto existente (datos genéricos)
-     * @param datos Map con los datos del producto a editar
-     * @return "PRODUCTO_ACTUALIZADO" si exitoso, "SIN_CAMBIOS" si no hay modificaciones, "error" si falla
-     */
     public String editarProducto(Map<String, Object> datos) {
         try {
-            // Obtener el producto original para comparar
             String codigo = String.valueOf(datos.getOrDefault("codigo", "")).trim();
             Map<String, Object> productoOriginal = obtenerProductoPorCodigo(codigo);
 
             if (productoOriginal == null) {
                 return "error";
             }
-
-            // Verificar si hay cambios
             boolean hayCambios = false;
 
             String nombreNuevo = String.valueOf(datos.getOrDefault("nombre", "")).trim();
             String nombreOriginal = String.valueOf(productoOriginal.getOrDefault("nombre", "")).trim();
-            if (!nombreNuevo.equals(nombreOriginal)) hayCambios = true;
+            if (!nombreNuevo.equals(nombreOriginal)) {
+                hayCambios = true;
+            }
 
             String marcaNuevo = String.valueOf(datos.getOrDefault("marca", "")).trim();
             String marcaOriginal = String.valueOf(productoOriginal.getOrDefault("marca", "")).trim();
-            if (!marcaNuevo.equals(marcaOriginal)) hayCambios = true;
+            if (!marcaNuevo.equals(marcaOriginal)) {
+                hayCambios = true;
+            }
 
             int cantidadNueva = Integer.parseInt(String.valueOf(datos.getOrDefault("cantidad", "0")));
             int cantidadOriginal = Integer.parseInt(String.valueOf(productoOriginal.getOrDefault("stock", "0")));
-            if (cantidadNueva != cantidadOriginal) hayCambios = true;
+            if (cantidadNueva != cantidadOriginal) {
+                hayCambios = true;
+            }
 
             double precioVentaNuevo = Double.parseDouble(String.valueOf(datos.getOrDefault("precio_venta", "0")));
             double precioVentaOriginal = Double.parseDouble(String.valueOf(productoOriginal.getOrDefault("precio_venta", "0")));
-            if (precioVentaNuevo != precioVentaOriginal) hayCambios = true;
+            if (precioVentaNuevo != precioVentaOriginal) {
+                hayCambios = true;
+            }
 
             int stockMinimoNuevo = Integer.parseInt(String.valueOf(datos.getOrDefault("stock_minimo", "5")));
             int stockMinimoOriginal = Integer.parseInt(String.valueOf(productoOriginal.getOrDefault("stock_minimo", "5")));
-            if (stockMinimoNuevo != stockMinimoOriginal) hayCambios = true;
+            if (stockMinimoNuevo != stockMinimoOriginal) {
+                hayCambios = true;
+            }
 
             String estadoNuevo = String.valueOf(datos.getOrDefault("estado", "Activo")).trim();
             String estadoOriginal = String.valueOf(productoOriginal.getOrDefault("estado", "Activo")).trim();
-            if (!estadoNuevo.equals(estadoOriginal)) hayCambios = true;
+            if (!estadoNuevo.equals(estadoOriginal)) {
+                hayCambios = true;
+            }
 
             String rucProveedorNuevo = String.valueOf(datos.getOrDefault("ruc_proveedor", "")).trim();
             String rucProveedorOriginal = String.valueOf(productoOriginal.getOrDefault("ruc_proveedor", "")).trim();
-            if (!rucProveedorNuevo.equals(rucProveedorOriginal)) hayCambios = true;
+            if (!rucProveedorNuevo.equals(rucProveedorOriginal)) {
+                hayCambios = true;
+            }
 
             if (!hayCambios) {
                 return "SIN_CAMBIOS";
             }
-
-            // Si hay cambios, proceder a editar (simulado)
             System.out.println("Editando producto: " + codigo);
             System.out.println("Proveedor RUC: " + rucProveedorNuevo);
             return "PRODUCTO_ACTUALIZADO";
@@ -577,6 +590,7 @@ public class Sistema {
 
     /**
      * Obtener un producto por su código (para comparar cambios)
+     *
      * @param codigo Código del producto
      * @return Map con los datos del producto o null si no existe
      */
@@ -592,6 +606,7 @@ public class Sistema {
 
     /**
      * Obtener categorías de productos (datos genéricos)
+     *
      * @return Lista de categorías
      */
     public List<Map<String, Object>> obtenerCategoriasProductos() {
@@ -611,6 +626,7 @@ public class Sistema {
     // --- MÉTODOS DE CLIENTES ---
     /**
      * Agregar un nuevo cliente
+     *
      * @param datos Map con los datos del cliente
      * @return "CLIENTE_REGISTRADO" si exitoso, "error" si falla
      */
@@ -628,6 +644,7 @@ public class Sistema {
 
     /**
      * Editar un cliente existente
+     *
      * @param datos Map con los datos del cliente a editar
      * @return "CLIENTE_ACTUALIZADO" si exitoso, "error" si falla
      */

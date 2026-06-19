@@ -109,13 +109,14 @@ public class TrabajadorDao implements TrabajadorDaoInterfas {
             ps.setString(9, t.getCargo());
             ps.setString(10, t.getEstado());
             ps.setString(11, usuarioLogueado);
-            if (usuario != null && !usuario.trim().isEmpty()) {
-                ps.setString(12, usuario);
+            if (usuario != null && !usuario.trim().isEmpty() && contrasena != null && !contrasena.trim().isEmpty()) {
+                ps.setString(12, usuario.trim());
                 ps.setString(13, contrasena);
             } else {
                 ps.setNull(12, java.sql.Types.VARCHAR);
                 ps.setNull(13, java.sql.Types.VARCHAR);
             }
+
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getString(1);
@@ -131,41 +132,33 @@ public class TrabajadorDao implements TrabajadorDaoInterfas {
 
     @Override
     public String editarTrabajador(Trabajador t, String usuarioLogueado, String username, String password) {
-        String sql = "SELECT public.fn_editar_trabajador(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "SELECT public.fn_editar_trabajador_completo(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conexion = ConexionDB.getInstance().getConnection(); PreparedStatement ps = conexion.prepareStatement(sql)) {
-            ps.setString(1, t.getNumeroDocumento());
+
+            ps.setString(1, t.getNumeroDocumento()); 
             ps.setString(2, t.getNombre());
             ps.setString(3, t.getApellido_paterno());
             ps.setString(4, t.getApellido_materno());
             ps.setString(5, t.getCelular());
             ps.setString(6, t.getCorreo());
             ps.setString(7, t.getDireccion());
-            ps.setString(8, t.getCargo());
-            ps.setString(9, t.getEstado());
-            ps.setString(10, usuarioLogueado);
-
-            if (username != null && !username.trim().isEmpty()) {
-                ps.setString(11, username);
-                ps.setString(12, password);
-            } else {
-                ps.setNull(11, java.sql.Types.VARCHAR);
-                ps.setNull(12, java.sql.Types.VARCHAR);
-            }
-
+            ps.setString(8, t.getCargo());         
+            ps.setString(9, t.getEstado());     
+            ps.setString(10, usuarioLogueado); 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     String resultado = rs.getString(1);
                     System.out.println("Resultado real desde la BD: [" + resultado + "]");
                     return resultado;
                 }
-            } catch (Exception e) {
-                // ...
             }
             return "NO_RETORNO";
 
         } catch (Exception e) {
             System.err.println("Error en editarTrabajador: " + e.getMessage());
+            e.printStackTrace();
             return "ERROR_DB: " + e.getMessage();
         }
     }
+
 }
