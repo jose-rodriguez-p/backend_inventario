@@ -42,8 +42,6 @@ public class Sistema {
     // Arreglos de objetos (Temporales, se reemplazarán por Base de Datos más adelante)
     private final List<Cliente> listaClientes;
     private final List<Producto> listaProductos;
-    private final List<Proveedor> listaProveedores;
-    private final List<Trabajador> listaTrabajadores;
     private final List<String> listaCategorias;
     private final List<Map<String, Object>> listaDocumentos;
     private final List<Map<String, Object>> listaCargos;
@@ -52,79 +50,12 @@ public class Sistema {
     private Sistema() {
         this.listaClientes = new ArrayList<>();
         this.listaProductos = new ArrayList<>();
-        this.listaProveedores = new ArrayList<>();
-        this.listaTrabajadores = new ArrayList<>();
         this.listaCategorias = new ArrayList<>();
         this.listaDocumentos = new ArrayList<>();
         this.listaCargos = new ArrayList<>();
 
-        generarDatosMasivos();
     }
     ExportadorService exportador = ExportadorService.getInstancia();
-
-    // Simulamos los datos iniciales
-    private void generarDatosMasivos() {
-        String[] nombres = {"Jose", "Ana", "Carlos", "Lucia", "Ricardo", "Elena", "Pedro", "Maria", "Jorge", "Sofia"};
-        String[] apellidosP = {"Rodriguez", "Lopez", "Sanchez", "Mendoza", "Vargas", "Castro", "Gomez", "Paredes", "Torres", "Vega"};
-        String[] apellidosM = {"Peña", "Garcia", "Torres", "Ruiz", "Ortiz", "Soto", "Lara", "Diaz", "Rojas", "Salas"};
-
-        for (int i = 1; i <= 30; i++) {
-            listaClientes.add(new Cliente(
-                    "7" + (10000000 + i),
-                    nombres[i % 10] + " " + i,
-                    apellidosP[i % 10],
-                    apellidosM[i % 10],
-                    "9" + (10000000 + i),
-                    nombres[i % 10].toLowerCase() + i + "@gmail.com"
-            ));
-        }
-
-        String[] cargosNombres = {"Mecánico", "Administrador", "Vendedor", "Asistente"};
-        for (int i = 1; i <= 25; i++) {
-            listaTrabajadores.add(new Trabajador(
-                    "DNI",
-                    "T" + (20000000 + i),
-                    nombres[i % 10],
-                    apellidosM[i % 10],
-                    apellidosP[i % 10],
-                    "9" + (20000000 + i),
-                    "trabajador" + i + "@multiservicio.com",
-                    "Calle Falsa " + i,
-                    cargosNombres[i % 4],
-                    "Activo"
-            ));
-        }
-
-        String[] cats = {"Lubricantes", "Repuestos", "Filtros", "Neumáticos", "Frenos"};
-        String[] prodNombres = {"Aceite Motor", "Filtro Aire", "Pastillas Freno", "Neumático", "Bujía", "Amortiguador", "Disco Freno", "Batería"};
-        for (int i = 1; i <= 30; i++) {
-            listaProductos.add(new Producto(
-                    "PROD-" + String.format("%03d", i),
-                    prodNombres[i % 8] + " " + (i * 10),
-                    "Marca " + (i % 5),
-                    cats[i % 5],
-                    10 + i,
-                    5 + (i % 5),
-                    25.0 + (i * 2),
-                    "Activo"
-            ));
-        }
-
-        for (int i = 1; i <= 10; i++) {
-            listaProveedores.add(new Proveedor(
-                    "20" + (1000000000L + i),
-                    "Empresa Automotriz " + i + " S.A.",
-                    "9" + (30000000 + i),
-                    "contacto" + i + "@empresa.com",
-                    "Zona Industrial " + i,
-                    "Activo"
-            ));
-        }
-
-        listaCategorias.addAll(List.of("Lubricantes", "Repuestos", "Filtros", "Neumáticos", "Frenos"));
-        listaDocumentos.addAll(List.of(Map.of("id", 1, "nombre", "DNI"), Map.of("id", 2, "nombre", "Pasaporte")));
-        listaCargos.addAll(List.of(Map.of("id", 1, "nombre", "Mecánico"), Map.of("id", 2, "nombre", "Administrador"), Map.of("id", 3, "nombre", "Vendedor")));
-    }
 
     public Usuario procesarLogin(String usuario, String contrasena) {
         Usuario user = login.validando(usuario, contrasena);
@@ -237,6 +168,21 @@ public class Sistema {
         return exportador.generarExcel("Reporte de Personal", headers, keys, trabajadores);
     }
 
+    public byte[] generarPDFBytesProveedores(List<Map<String, Object>> proveedores) throws Exception {
+        String[] headers = {"RUC", "Nombre Empresa", "Celular", "Correo", "Dirección", "Estado"};
+        String[] keys = {"ruc", "nombre_empresa", "celular", "correo", "direccion", "estado"};
+        float[] pesos = {3f, 4.5f, 3f, 3.5f, 4f, 2.5f};
+
+        return exportador.generarPDF("Reporte de Proveedores", headers, keys, pesos, proveedores);
+    }
+
+    public byte[] generarExcelBytesProveedores(List<Map<String, Object>> proveedores) throws Exception {
+        String[] headers = {"RUC", "NOMBRE EMPRESA", "CELULAR", "CORREO", "DIRECCIÓN", "ESTADO"};
+        String[] keys = {"ruc", "nombre_empresa", "celular", "correo", "direccion", "estado"};
+
+        return exportador.generarExcel("Reporte de Proveedores", headers, keys, proveedores);
+    }
+
     // --- MÉTODOS DE ACCESO A DATOS (GETTERS) ---
     public List<Cliente> obtenerListaClientes() {
         return listaClientes;
@@ -268,7 +214,7 @@ public class Sistema {
         String password = datosActualizados.get("contrasena") != null ? String.valueOf(datosActualizados.get("contrasena")) : null;
         return trabajadorDao.editarTrabajador(
                 t,
-                this.usuario, 
+                this.usuario,
                 username,
                 password
         );
@@ -473,44 +419,6 @@ public class Sistema {
         }
     }
 
-    // --- MÉTODOS DE PRODUCTOS ---
-    /**
-     * Listar productos con el nombre del proveedor (datos genéricos)
-     *
-     * @return Lista de productos con información del proveedor
-     */
-    public List<Map<String, Object>> listarProductosConProveedor() {
-        List<Map<String, Object>> lista = new ArrayList<>();
-
-        // Datos genéricos por ahora
-        String[] cats = {"Lubricantes", "Repuestos", "Filtros", "Neumáticos", "Frenos"};
-        String[] prodNombres = {"Aceite Motor", "Filtro Aire", "Pastillas Freno", "Neumático", "Bujía", "Amortiguador", "Disco Freno", "Batería"};
-
-        for (int i = 1; i <= 30; i++) {
-            Map<String, Object> fila = new HashMap<>();
-            fila.put("codigo", "PROD-" + String.format("%03d", i));
-            fila.put("nombre", prodNombres[i % 8] + " " + (i * 10));
-            fila.put("marca", "Marca " + (i % 5));
-            fila.put("categoria", cats[i % 5]);
-            fila.put("stock", 10 + i);
-            fila.put("stock_minimo", 5 + (i % 5));
-            fila.put("precio_compra", 25.0 + (i * 2));
-            fila.put("precio_venta", 30.0 + (i * 2.5));
-            fila.put("estado", i % 3 == 0 ? "Inactivo" : "Activo");
-            fila.put("ruc_proveedor", i % 2 == 0 ? "20" + (1000000000L + (i / 2)) : "");
-            fila.put("nombre_proveedor", i % 2 == 0 ? "Empresa Automotriz " + ((i / 2) + 1) + " S.A." : "Sin proveedor");
-            lista.add(fila);
-        }
-
-        return lista;
-    }
-
-    /**
-     * Agregar un nuevo producto (datos genéricos)
-     *
-     * @param datos Map con los datos del producto
-     * @return "PRODUCTO_REGISTRADO" si exitoso, "error" si falla
-     */
     public String agregarProducto(Map<String, Object> datos) {
         try {
             System.out.println("Agregando producto: " + datos.get("codigo"));
@@ -523,92 +431,6 @@ public class Sistema {
         }
     }
 
-    public String editarProducto(Map<String, Object> datos) {
-        try {
-            String codigo = String.valueOf(datos.getOrDefault("codigo", "")).trim();
-            Map<String, Object> productoOriginal = obtenerProductoPorCodigo(codigo);
-
-            if (productoOriginal == null) {
-                return "error";
-            }
-            boolean hayCambios = false;
-
-            String nombreNuevo = String.valueOf(datos.getOrDefault("nombre", "")).trim();
-            String nombreOriginal = String.valueOf(productoOriginal.getOrDefault("nombre", "")).trim();
-            if (!nombreNuevo.equals(nombreOriginal)) {
-                hayCambios = true;
-            }
-
-            String marcaNuevo = String.valueOf(datos.getOrDefault("marca", "")).trim();
-            String marcaOriginal = String.valueOf(productoOriginal.getOrDefault("marca", "")).trim();
-            if (!marcaNuevo.equals(marcaOriginal)) {
-                hayCambios = true;
-            }
-
-            int cantidadNueva = Integer.parseInt(String.valueOf(datos.getOrDefault("cantidad", "0")));
-            int cantidadOriginal = Integer.parseInt(String.valueOf(productoOriginal.getOrDefault("stock", "0")));
-            if (cantidadNueva != cantidadOriginal) {
-                hayCambios = true;
-            }
-
-            double precioVentaNuevo = Double.parseDouble(String.valueOf(datos.getOrDefault("precio_venta", "0")));
-            double precioVentaOriginal = Double.parseDouble(String.valueOf(productoOriginal.getOrDefault("precio_venta", "0")));
-            if (precioVentaNuevo != precioVentaOriginal) {
-                hayCambios = true;
-            }
-
-            int stockMinimoNuevo = Integer.parseInt(String.valueOf(datos.getOrDefault("stock_minimo", "5")));
-            int stockMinimoOriginal = Integer.parseInt(String.valueOf(productoOriginal.getOrDefault("stock_minimo", "5")));
-            if (stockMinimoNuevo != stockMinimoOriginal) {
-                hayCambios = true;
-            }
-
-            String estadoNuevo = String.valueOf(datos.getOrDefault("estado", "Activo")).trim();
-            String estadoOriginal = String.valueOf(productoOriginal.getOrDefault("estado", "Activo")).trim();
-            if (!estadoNuevo.equals(estadoOriginal)) {
-                hayCambios = true;
-            }
-
-            String rucProveedorNuevo = String.valueOf(datos.getOrDefault("ruc_proveedor", "")).trim();
-            String rucProveedorOriginal = String.valueOf(productoOriginal.getOrDefault("ruc_proveedor", "")).trim();
-            if (!rucProveedorNuevo.equals(rucProveedorOriginal)) {
-                hayCambios = true;
-            }
-
-            if (!hayCambios) {
-                return "SIN_CAMBIOS";
-            }
-            System.out.println("Editando producto: " + codigo);
-            System.out.println("Proveedor RUC: " + rucProveedorNuevo);
-            return "PRODUCTO_ACTUALIZADO";
-        } catch (Exception e) {
-            System.out.println("Error en editarProducto: " + e.getMessage());
-            e.printStackTrace();
-            return "error";
-        }
-    }
-
-    /**
-     * Obtener un producto por su código (para comparar cambios)
-     *
-     * @param codigo Código del producto
-     * @return Map con los datos del producto o null si no existe
-     */
-    private Map<String, Object> obtenerProductoPorCodigo(String codigo) {
-        List<Map<String, Object>> productos = listarProductosConProveedor();
-        for (Map<String, Object> producto : productos) {
-            if (codigo.equals(String.valueOf(producto.get("codigo")))) {
-                return producto;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Obtener categorías de productos (datos genéricos)
-     *
-     * @return Lista de categorías
-     */
     public List<Map<String, Object>> obtenerCategoriasProductos() {
         List<Map<String, Object>> lista = new ArrayList<>();
         String[] cats = {"Lubricantes", "Repuestos", "Filtros", "Neumáticos", "Frenos"};
@@ -623,40 +445,31 @@ public class Sistema {
         return lista;
     }
 
-    // --- MÉTODOS DE CLIENTES ---
-    /**
-     * Agregar un nuevo cliente
-     *
-     * @param datos Map con los datos del cliente
-     * @return "CLIENTE_REGISTRADO" si exitoso, "error" si falla
-     */
     public String agregarCliente(Map<String, Object> datos) {
-        // TODO: Implementar método en ClienteDao para agregar cliente
         try {
-            // Por ahora, retorno un mensaje temporal
-            return "CLIENTE_REGISTRADO";
+            Map<String, Object> clienteData = (Map<String, Object>) datos.get("cliente");
+            List<Map<String, String>> carrosData = (List<Map<String, String>>) datos.get("carros");
+
+            return clienteDao.registrarClienteConCarros(clienteData, carrosData, this.usuario);
         } catch (Exception e) {
-            System.out.println("Error en agregarCliente: " + e.getMessage());
             e.printStackTrace();
             return "error";
         }
     }
 
-    /**
-     * Editar un cliente existente
-     *
-     * @param datos Map con los datos del cliente a editar
-     * @return "CLIENTE_ACTUALIZADO" si exitoso, "error" si falla
-     */
-    public String editarCliente(Map<String, Object> datos) {
-        // TODO: Implementar método en ClienteDao para editar cliente
+    public String editarCliente(Map<String, Object> payload) {
         try {
-            // Por ahora, retorno un mensaje temporal
-            return "CLIENTE_ACTUALIZADO";
+            Map<String, Object> cliente = (Map<String, Object>) payload.get("cliente");
+            List<Map<String, String>> carros = (List<Map<String, String>>) payload.get("carros");
+
+            if (cliente == null || cliente.get("dni") == null) {
+                return "error_validacion: Falta el DNI del cliente";
+            }
+            return this.clienteDao.editarClienteConCarros(cliente, carros,this.usuario);
         } catch (Exception e) {
             System.out.println("Error en editarCliente: " + e.getMessage());
             e.printStackTrace();
-            return "error";
+            return "error_backend: " + e.getMessage();
         }
     }
 

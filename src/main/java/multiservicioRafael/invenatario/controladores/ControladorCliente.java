@@ -14,6 +14,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
@@ -60,6 +61,36 @@ public class ControladorCliente {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/registrar")
+    public ResponseEntity<Map<String, String>> registrar(@RequestBody Map<String, Object> payload) {
+        String usuarioOperador = "operador_trujillo";
+        payload.put("usuarioLogueado", usuarioOperador);
+
+        String respuestaBd = Sistema.getInstancia().agregarCliente(payload);
+        Map<String, String> respuestaJson = new HashMap<>();
+        respuestaJson.put("status", respuestaBd);
+
+        if (respuestaBd.equals("registrado")) {
+            return ResponseEntity.ok(respuestaJson);
+        } else {
+            return ResponseEntity.badRequest().body(respuestaJson);
+        }
+    }
+
+    @PutMapping("/editar")
+    public ResponseEntity<Map<String, String>> editar(@RequestBody Map<String, Object> payload) {
+        String usuarioOperador = "operador_trujillo";
+        payload.put("usuarioLogueado", usuarioOperador);
+        String respuestaBd = Sistema.getInstancia().editarCliente(payload);
+        Map<String, String> respuestaJson = new HashMap<>();
+        respuestaJson.put("status", respuestaBd);
+        if (respuestaBd.equals("editado")) {
+            return ResponseEntity.ok(respuestaJson);
+        } else {
+            return ResponseEntity.badRequest().body(respuestaJson);
         }
     }
 }

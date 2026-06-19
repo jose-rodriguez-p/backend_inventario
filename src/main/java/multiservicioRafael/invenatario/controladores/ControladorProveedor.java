@@ -73,4 +73,32 @@ public class ControladorProveedor {
             return ResponseEntity.status(400).body("Error al registrar el proveedor");
         }
     }
+
+    @PostMapping("/export/pdf")
+    public ResponseEntity<byte[]> exportarPDF(@RequestBody List<Map<String, Object>> proveedores) {
+        try {
+            byte[] pdfBytes = Sistema.getInstancia().generarPDFBytesProveedores(proveedores);
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.setContentType(org.springframework.http.MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "proveedores.pdf");
+            return ResponseEntity.ok().headers(headers).body(pdfBytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
+    @PostMapping("/export/excel")
+    public ResponseEntity<byte[]> exportarExcel(@RequestBody List<Map<String, Object>> proveedores) {
+        try {
+            byte[] excelBytes = Sistema.getInstancia().generarExcelBytesProveedores(proveedores);
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.setContentType(org.springframework.http.MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", "proveedores.xlsx");
+            return ResponseEntity.ok().headers(headers).body(excelBytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
 }

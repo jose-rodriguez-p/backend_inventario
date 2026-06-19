@@ -14,5 +14,7 @@ import java.util.Map;
 public interface ClienteDaoInterfas {
     
     boolean validarExisteCliente(String dni);
-    public List<Map<String, Object>> listarClientesConCarros();
+    List<Map<String, Object>> listarClientesConCarros();
+    String registrarClienteConCarros(Map<String, Object> cliente, List<Map<String, String>> carros, String usuarioLogueado);
+    String editarClienteConCarros(Map<String, Object> cliente, List<Map<String, String>> carros, String usuarioLogueado);
 }
