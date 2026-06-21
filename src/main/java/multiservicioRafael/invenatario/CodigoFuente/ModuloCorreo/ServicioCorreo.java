@@ -141,15 +141,6 @@ public class ServicioCorreo {
     }
 
     private Properties cargarConfiguracion() {
-        Properties properties = new Properties();
-        try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("application.properties")) {
-            if (input == null) {
-                throw new RuntimeException("No se encontró application.properties");
-            }
-            properties.load(input);
-            return properties;
-        } catch (IOException e) {
-            throw new RuntimeException("Error cargando configuración", e);
-        }
+        return multiservicioRafael.invenatario.CodigoFuente.EnvLoader.loadProperties();
     }
 }

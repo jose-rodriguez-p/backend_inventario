@@ -11,17 +11,8 @@ public class ConsultaRuc {
     private static ConsultaRuc instancia;
     private String token;
     private ConsultaRuc() {
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream("application.properties")) {
-            Properties prop = new Properties();
-            if (input != null) {
-                prop.load(input);
-                this.token = prop.getProperty("apisperu.api.key");
-            } else {
-                System.err.println("No se encontró el archivo application.properties");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Properties prop = multiservicioRafael.invenatario.CodigoFuente.EnvLoader.loadProperties();
+        this.token = prop.getProperty("apisperu.api.key");
     }
     public static synchronized ConsultaRuc getInstance() {
         if (instancia == null) {

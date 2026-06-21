@@ -23,17 +23,8 @@ public class ConsultaDNI {
     private String token;
 
     private ConsultaDNI() {
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream("application.properties")) {
-            Properties prop = new Properties();
-            if (input == null) {
-                System.out.println("No se encontró config.properties");
-                return;
-            }
-            prop.load(input);
-            this.token = prop.getProperty("apisperu.api.key");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Properties prop = multiservicioRafael.invenatario.CodigoFuente.EnvLoader.loadProperties();
+        this.token = prop.getProperty("apisperu.api.key");
     }
 
     private String ejecutarConsulta(String dni) {

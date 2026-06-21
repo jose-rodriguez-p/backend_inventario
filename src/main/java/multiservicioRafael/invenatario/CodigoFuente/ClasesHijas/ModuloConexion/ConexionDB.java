@@ -12,35 +12,20 @@ public class ConexionDB {
     private HikariDataSource dataSource; 
 
     private ConexionDB() {
-        Properties properties = new Properties();
-        
-        try (InputStream input = Thread.currentThread()
-                .getContextClassLoader()
-                .getResourceAsStream("application.properties")) {
-            
-            if (input == null) {
-                throw new RuntimeException("No se encontró el archivo application.properties en la raíz de resources.");
-            }
+        Properties properties = multiservicioRafael.invenatario.CodigoFuente.EnvLoader.loadProperties();
 
-            properties.load(input);
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(properties.getProperty("url"));
+        config.setUsername(properties.getProperty("user"));
+        config.setPassword(properties.getProperty("password"));
+        config.setDriverClassName("org.postgresql.Driver");
 
-            HikariConfig config = new HikariConfig();
-            config.setJdbcUrl(properties.getProperty("url"));
-            config.setUsername(properties.getProperty("user"));
-            config.setPassword(properties.getProperty("password"));
-            config.setDriverClassName("org.postgresql.Driver");
+        config.setMaximumPoolSize(5);        
+        config.setConnectionTimeout(15000);   
+        config.setIdleTimeout(120000);      
+        config.setConnectionTestQuery("SELECT 1"); 
 
-           
-            config.setMaximumPoolSize(5);        
-            config.setConnectionTimeout(15000);   
-            config.setIdleTimeout(120000);      
-            config.setConnectionTestQuery("SELECT 1"); 
-
-            this.dataSource = new HikariDataSource(config);
-
-        } catch (IOException e) {
-            throw new RuntimeException("Error crítico al cargar propiedades: " + e.getMessage(), e);
-        }
+        this.dataSource = new HikariDataSource(config);
     }
 
     public static synchronized ConexionDB getInstance() {
