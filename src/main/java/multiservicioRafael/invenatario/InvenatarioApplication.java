@@ -13,6 +13,7 @@ public class InvenatarioApplication {
     public static void main(String[] args) {
         System.setProperty("java.awt.headless", "true");
         SpringApplication.run(InvenatarioApplication.class, args);
+        
     }
 
     public static void abrirNavegador(String url) {
