@@ -11,13 +11,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class InvenatarioApplication { 
 
     public static void main(String[] args) {
-        System.setProperty("java.awt.headless", "false");
+        System.setProperty("java.awt.headless", "true");
         SpringApplication.run(InvenatarioApplication.class, args);
-        abrirNavegador("http://localhost:4200");
     }
 
     public static void abrirNavegador(String url) {
-        if (Desktop.isDesktopSupported()) {
+        if (!java.awt.GraphicsEnvironment.isHeadless() && Desktop.isDesktopSupported()) {
             Desktop desktop = Desktop.getDesktop();
             try {
                 Thread.sleep(2000);
@@ -30,7 +29,7 @@ public class InvenatarioApplication {
                 Thread.currentThread().interrupt();
             }
         } else {
-            System.out.println("El sistema operativo no soporta la apertura automática de ventanas.");
+            System.out.println("Entorno sin interfaz gráfica detectado. Saltando apertura automática.");
         }
     }
 }
