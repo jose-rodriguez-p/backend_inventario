@@ -7,7 +7,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 
 @RestController
 @RequestMapping("/api/clientes")
@@ -111,6 +113,40 @@ public class ControladorCliente {
             return ResponseEntity.ok(respuestaJson);
         } else {
             return ResponseEntity.badRequest().body(respuestaJson);
+        }
+    }
+
+    @PostMapping("/export/pdf")
+    public ResponseEntity<byte[]> exportarPDF(@RequestBody List<Map<String, Object>> clientes) {
+        try {
+            byte[] pdfBytes = Sistema.getInstancia().generarPDFBytesClientes(clientes);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "reporte_clientes.pdf");
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/export/excel")
+    public ResponseEntity<byte[]> exportarExcel(@RequestBody List<Map<String, Object>> clientes) {
+        try {
+            byte[] excelBytes = Sistema.getInstancia().generarExcelBytesClientes(clientes);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(new MediaType("application", "vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentDispositionFormData("attachment", "reporte_clientes.xlsx");
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelBytes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

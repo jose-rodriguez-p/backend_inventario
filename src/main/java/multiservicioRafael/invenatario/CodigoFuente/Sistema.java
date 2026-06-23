@@ -183,6 +183,21 @@ public class Sistema {
         return exportador.generarExcel("Reporte de Proveedores", headers, keys, proveedores);
     }
 
+    public byte[] generarPDFBytesClientes(List<Map<String, Object>> clientes) throws Exception {
+        String[] headers = {"DNI", "Nombre", "Apellido Paterno", "Apellido Materno", "Celular", "Correo", "Estado", "Vehículos"};
+        String[] keys = {"dni", "nombre", "apellido_paterno", "apellido_materno", "celular", "correo", "estado", "vehiculos"};
+        float[] pesos = {2.5f, 3.5f, 4f, 4f, 2.5f, 3.5f, 2f, 4f};
+
+        return exportador.generarPDF("Reporte de Clientes", headers, keys, pesos, clientes);
+    }
+
+    public byte[] generarExcelBytesClientes(List<Map<String, Object>> clientes) throws Exception {
+        String[] headers = {"DNI", "NOMBRE", "APELLIDO PATERNO", "APELLIDO MATERNO", "CELULAR", "CORREO", "ESTADO", "VEHÍCULOS"};
+        String[] keys = {"dni", "nombre", "apellido_paterno", "apellido_materno", "celular", "correo", "estado", "vehiculos"};
+
+        return exportador.generarExcel("Reporte de Clientes", headers, keys, clientes);
+    }
+
     // --- MÉTODOS DE ACCESO A DATOS (GETTERS) ---
     public List<Cliente> obtenerListaClientes() {
         return listaClientes;
@@ -223,6 +238,9 @@ public class Sistema {
     public ArrayList<Trabajador> obtenerListaTrabajadores() {
         TrabajadorDao trabajador = new TrabajadorDao();
         ArrayList<Trabajador> trabajadores = trabajador.listTrabajador();
+        for(Trabajador t:trabajadores){
+            System.out.println(t);
+        }
         if (trabajadores != null) {
             return trabajadores;
         }

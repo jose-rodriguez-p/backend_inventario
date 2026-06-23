@@ -18,25 +18,45 @@ public class TrabajadorDao implements TrabajadorDaoInterfas {
     public ArrayList<Trabajador> listTrabajador() {
         ArrayList<Trabajador> trabajadores = new ArrayList<>();
         String sql = "SELECT * FROM public.fn_listar_trabajadores_completo()";
+
         try (Connection conexion = ConexionDB.getInstance().getConnection(); PreparedStatement sc = conexion.prepareStatement(sql); ResultSet resultado = sc.executeQuery()) {
 
             while (resultado.next()) {
-                String nroDoc = resultado.getString("documento");
-                String nom = resultado.getString("Nombre");
-                String apePat = resultado.getString("Apellido Paterno");
-                String apeMat = resultado.getString("Apellido Materno");
-                String cel = resultado.getString("Celular");
-                String correo = resultado.getString("Correo");
-                String cargo = resultado.getString("Cargo");
-                String estado = resultado.getString("Estado");
-                String fechacompleta = resultado.getString("Fecha de Registro");
+                String nroDoc = resultado.getString("nro_documento");
+                String nom = resultado.getString("nombre");
+                String apePat = resultado.getString("apellido_paterno");
+                String apeMat = resultado.getString("apellido_materno");
+                String cel = resultado.getString("celular");
+                String correo = resultado.getString("correo");
+                String direccion = resultado.getString("direccion");
+                if (direccion == null) {
+                    direccion = "";
+                }
+                String cargo = resultado.getString("cargo");
+                String estado = resultado.getString("estado");
+                String fechacompleta = resultado.getString("fecha_registro");
                 String soloFecha = "";
                 String soloHora = "";
+
                 if (fechacompleta != null && fechacompleta.length() >= 19) {
-                    soloFecha = fechacompleta.substring(0, 10);
-                    soloHora = fechacompleta.substring(11, 19);
+                    soloFecha = fechacompleta.substring(0, 10); 
+                    soloHora = fechacompleta.substring(11, 19);  
                 }
-                Trabajador t = new Trabajador(nroDoc, nom, apeMat, apePat, cel, correo, cargo, estado, soloFecha, soloHora);
+                Trabajador t = new Trabajador(
+                        nroDoc, 
+                        nroDoc, 
+                        nom, 
+                        apeMat, 
+                        apePat,
+                        cel, 
+                        correo, 
+                        direccion, 
+                        cargo, 
+                        estado, 
+                        soloFecha, 
+                        soloHora 
+                );
+
                 trabajadores.add(t);
             }
         } catch (Exception e) {
@@ -135,16 +155,16 @@ public class TrabajadorDao implements TrabajadorDaoInterfas {
         String sql = "SELECT public.fn_editar_trabajador_completo(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conexion = ConexionDB.getInstance().getConnection(); PreparedStatement ps = conexion.prepareStatement(sql)) {
 
-            ps.setString(1, t.getNumeroDocumento()); 
+            ps.setString(1, t.getNumeroDocumento());
             ps.setString(2, t.getNombre());
             ps.setString(3, t.getApellido_paterno());
             ps.setString(4, t.getApellido_materno());
             ps.setString(5, t.getCelular());
             ps.setString(6, t.getCorreo());
             ps.setString(7, t.getDireccion());
-            ps.setString(8, t.getCargo());         
-            ps.setString(9, t.getEstado());     
-            ps.setString(10, usuarioLogueado); 
+            ps.setString(8, t.getCargo());
+            ps.setString(9, t.getEstado());
+            ps.setString(10, usuarioLogueado);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     String resultado = rs.getString(1);

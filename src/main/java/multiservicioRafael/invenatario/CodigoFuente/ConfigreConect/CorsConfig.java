@@ -14,7 +14,6 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        // Cambiamos el "*" por tu URL real de Vercel y tu puerto local para que no falle nada
                         .allowedOrigins("https://proyecto-multiservicio-rafael.vercel.app", "http://localhost:4200")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
