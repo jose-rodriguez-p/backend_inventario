@@ -55,6 +55,10 @@ public class ServicioCorreo {
             int minutos = RegistroCodigosVerificacion.getInstancia().getMinutosValidez();
             String remitente = config.getProperty("brevo.smtp.from", "rodriguezpenajosemanuel62@gmail.com");
             
+            System.out.println("Enviando correo a: " + correoDestino);
+            System.out.println("SMTP Host: " + config.getProperty("brevo.smtp.host"));
+            System.out.println("SMTP User: " + config.getProperty("brevo.smtp.user"));
+            
             String html = """
                 <div style="
                 max-width:600px;
@@ -131,6 +135,7 @@ public class ServicioCorreo {
             message.setContent(html, "text/html; charset=utf-8");
 
             Transport.send(message);
+            System.out.println("Correo enviado exitosamente");
             return true;
 
         } catch (Exception e) {
