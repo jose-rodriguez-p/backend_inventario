@@ -129,4 +129,25 @@ public class ControladorLogin {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("status", "ERROR"));
     }
+
+    @PostMapping("/resetear-password")
+    public ResponseEntity<String> resetearPassword(@RequestBody Map<String, String> datos) {
+        try {
+            String username = datos.get("username");
+            if (username == null || username.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("DATOS_INCOMPLETOS");
+            }
+            boolean reseteado = Sistema.getInstancia().restablecerContrasenaUsuario(username);
+
+            if (reseteado) {
+                return ResponseEntity.ok("PASSWORD_RESETEADA");
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ERROR_AL_RESETEAR");
+            }
+        } catch (Exception e) {
+            System.out.println("Error en controlador resetearPassword: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR_INTERNO");
+        }
+    }
+    
 }

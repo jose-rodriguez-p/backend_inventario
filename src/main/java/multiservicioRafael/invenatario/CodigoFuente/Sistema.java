@@ -100,9 +100,6 @@ public class Sistema {
     }
 
     public boolean actualizarContrasena(String usuario, String nuevaContrasena) {
-        if (!RegistroCodigosVerificacion.getInstancia().estaValidado(usuario)) {
-            return false;
-        }
         if (nuevaContrasena == null || nuevaContrasena.isBlank()) {
             return false;
         }
@@ -238,7 +235,7 @@ public class Sistema {
     public ArrayList<Trabajador> obtenerListaTrabajadores() {
         TrabajadorDao trabajador = new TrabajadorDao();
         ArrayList<Trabajador> trabajadores = trabajador.listTrabajador();
-        for(Trabajador t:trabajadores){
+        for (Trabajador t : trabajadores) {
             System.out.println(t);
         }
         if (trabajadores != null) {
@@ -483,11 +480,42 @@ public class Sistema {
             if (cliente == null || cliente.get("dni") == null) {
                 return "error_validacion: Falta el DNI del cliente";
             }
-            return this.clienteDao.editarClienteConCarros(cliente, carros,this.usuario);
+            return this.clienteDao.editarClienteConCarros(cliente, carros, this.usuario);
         } catch (Exception e) {
             System.out.println("Error en editarCliente: " + e.getMessage());
             e.printStackTrace();
             return "error_backend: " + e.getMessage();
+        }
+    }
+
+    public boolean verificarContrasena(String username, String contrasenaActual) {
+        LoginDao login = new LoginDao();
+        Usuario usuario = login.validando(username, contrasenaActual);
+        if (usuario == null) {
+            return false;
+        }
+        return true;
+    }
+
+    ;
+    public boolean restablecerContrasenaUsuario(String usuario) {
+        LoginDao login = new LoginDao();
+        try {
+            if (usuario == null || usuario.trim().isEmpty()) {
+                return false;
+            }
+            String resultado = login.resetearContrasena(usuario.trim());
+
+            if ("PASSWORD_RESETEADA".equals(resultado)) {
+                return true; 
+            } else {
+                System.out.println("No se pudo resetear la contraseña. Motivo: " + resultado);
+                return false;
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error en la capa de Sistema al restablecer contraseña: " + e.getMessage());
+            return false;
         }
     }
 

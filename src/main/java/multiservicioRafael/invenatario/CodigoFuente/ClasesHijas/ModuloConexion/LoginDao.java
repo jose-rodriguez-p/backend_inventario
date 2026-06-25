@@ -12,8 +12,7 @@ public class LoginDao implements LoginDaoInterface {
     @Override
     public Usuario validando(String usuario_1, String password) {
         String sql = "SELECT * FROM public.fn_login(?, ?)";
-        try (Connection conexion = ConexionDB.getInstance().getConnection();
-             PreparedStatement cs = conexion.prepareStatement(sql)) {
+        try (Connection conexion = ConexionDB.getInstance().getConnection(); PreparedStatement cs = conexion.prepareStatement(sql)) {
             cs.setString(1, usuario_1);
             cs.setString(2, password);
             try (ResultSet rs = cs.executeQuery()) {
@@ -48,9 +47,8 @@ public class LoginDao implements LoginDaoInterface {
     @Override
     public String recuperar_contrasena(String usuario) {
         String sql = "SELECT * FROM public.fn_obtener_correo_usuario(?)";
-        try (Connection conexion = ConexionDB.getInstance().getConnection();
-             PreparedStatement cs = conexion.prepareStatement(sql)) {           
-            cs.setString(1, usuario);            
+        try (Connection conexion = ConexionDB.getInstance().getConnection(); PreparedStatement cs = conexion.prepareStatement(sql)) {
+            cs.setString(1, usuario);
             try (ResultSet rs = cs.executeQuery()) {
                 if (rs.next()) {
                     String estado = rs.getString("estado");
@@ -69,14 +67,13 @@ public class LoginDao implements LoginDaoInterface {
 
     @Override
     public String actualizarcontraseña(String usuario, String contrasena) {
-        String sql = "SELECT fn_actualizar_contrasena(?, ?)";       
-        try (Connection conexion = ConexionDB.getInstance().getConnection();
-             PreparedStatement cs = conexion.prepareStatement(sql)) {           
+        String sql = "SELECT fn_actualizar_contrasena(?, ?)";
+        try (Connection conexion = ConexionDB.getInstance().getConnection(); PreparedStatement cs = conexion.prepareStatement(sql)) {
             cs.setString(1, usuario);
             cs.setString(2, contrasena);
             try (ResultSet rs = cs.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getString(1); 
+                    return rs.getString(1);
                 }
             }
         } catch (Exception e) {
@@ -85,4 +82,21 @@ public class LoginDao implements LoginDaoInterface {
         return "ERROR";
     }
 
+    @Override
+    public String resetearContrasena(String usuario) {
+        String sql = "SELECT fn_reset_contrasena(?)";
+        try (Connection conexion = ConexionDB.getInstance().getConnection(); PreparedStatement cs = conexion.prepareStatement(sql)) {
+
+            cs.setString(1, usuario);
+
+            try (ResultSet rs = cs.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString(1); 
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error en resetearContrasena: " + e.getMessage());
+        }
+        return "ERROR";
+    }
 }

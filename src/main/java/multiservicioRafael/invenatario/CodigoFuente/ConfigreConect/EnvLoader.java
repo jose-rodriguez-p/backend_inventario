@@ -1,4 +1,4 @@
-package multiservicioRafael.invenatario.CodigoFuente;
+package multiservicioRafael.invenatario.CodigoFuente.ConfigreConect;
 
 import java.io.InputStream;
 import java.io.IOException;

@@ -11,7 +11,7 @@ public class ConsultaRuc {
     private static ConsultaRuc instancia;
     private String token;
     private ConsultaRuc() {
-        Properties prop = multiservicioRafael.invenatario.CodigoFuente.EnvLoader.loadProperties();
+        Properties prop = multiservicioRafael.invenatario.CodigoFuente.ConfigreConect.EnvLoader.loadProperties();
         this.token = prop.getProperty("apisperu.api.key");
     }
     public static synchronized ConsultaRuc getInstance() {

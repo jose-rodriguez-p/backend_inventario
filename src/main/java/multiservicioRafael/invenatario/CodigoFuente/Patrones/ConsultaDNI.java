@@ -23,7 +23,7 @@ public class ConsultaDNI {
     private String token;
 
     private ConsultaDNI() {
-        Properties prop = multiservicioRafael.invenatario.CodigoFuente.EnvLoader.loadProperties();
+        Properties prop = multiservicioRafael.invenatario.CodigoFuente.ConfigreConect.EnvLoader.loadProperties();
         this.token = prop.getProperty("apisperu.api.key");
     }
 

@@ -15,8 +15,8 @@ public class ControladorConfiguracion {
     public ResponseEntity<List<Map<String, Object>>> listarRoles() {
 
         try {
-            List<Map<String, Object>> roles =
-                    Sistema.getInstancia().listarRoles();
+            List<Map<String, Object>> roles
+                    = Sistema.getInstancia().listarRoles();
 
             if (roles == null || roles.isEmpty()) {
                 return ResponseEntity.noContent().build();
@@ -35,8 +35,8 @@ public class ControladorConfiguracion {
     public ResponseEntity<Boolean> crearRol(@RequestBody Map<String, Object> nuevoRol) {
 
         try {
-            boolean guardado =
-                    Sistema.getInstancia().agregarRol(nuevoRol);
+            boolean guardado
+                    = Sistema.getInstancia().agregarRol(nuevoRol);
 
             if (guardado) {
                 return ResponseEntity.ok(true);
@@ -52,4 +52,44 @@ public class ControladorConfiguracion {
                     .body(false);
         }
     }
+
+    // 1. MÉTODO EXCLUSIVO PARA VALIDAR EN TIEMPO REAL
+    @PostMapping("/validar-password-actual")
+    public ResponseEntity<Boolean> validarPasswordActual(@RequestBody Map<String, String> datos) {
+        try {
+            String username = datos.get("username");
+            String contrasenaActual = datos.get("contrasenaActual");
+
+            if (username == null || contrasenaActual == null) {
+                return ResponseEntity.badRequest().body(false);
+            }
+            boolean esValida = Sistema.getInstancia().verificarContrasena(username, contrasenaActual);
+
+            return ResponseEntity.ok(esValida);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
+        }
+    }
+
+    @PostMapping("/actualizar-password")
+    public ResponseEntity<String> actualizarPassword(@RequestBody Map<String, String> datos) {
+        try {
+            String username = datos.get("username");
+            String newPassword = datos.get("newPassword");
+            if (username == null || newPassword == null) {
+                return ResponseEntity.badRequest().body("DATOS_INCOMPLETOS");
+            }
+            boolean actualizado = Sistema.getInstancia().actualizarContrasena(username, newPassword);
+
+            if (actualizado) {
+                return ResponseEntity.ok("PASSWORD_ACTUALIZADA");
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ERROR_AL_ACTUALIZAR");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR_INTERNO");
+        }
+    }
+
+   
 }

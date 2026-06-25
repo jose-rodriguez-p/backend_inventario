@@ -14,5 +14,6 @@ public interface LoginDaoInterface {
     Usuario validando(String usuario,String password);
     String recuperar_contrasena(String usuario);
     String actualizarcontraseña(String usuario,String contrasena);
+    String resetearContrasena(String usuario);
     
 }

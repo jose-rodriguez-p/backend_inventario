@@ -83,9 +83,6 @@ public class ControladorCliente {
     @PostMapping("/registrar")
     public ResponseEntity<Map<String, String>> registrar(@RequestBody Map<String, Object> payload) {
 
-        String usuarioOperador = "operador_trujillo";
-        payload.put("usuarioLogueado", usuarioOperador);
-
         String respuestaBd = Sistema.getInstancia().agregarCliente(payload);
 
         Map<String, String> respuestaJson = new HashMap<>();
@@ -98,11 +95,8 @@ public class ControladorCliente {
         }
     }
 
-    @PutMapping("/editar")
-    public ResponseEntity<Map<String, String>> editar(@RequestBody Map<String, Object> payload) {
-
-        String usuarioOperador = "operador_trujillo";
-        payload.put("usuarioLogueado", usuarioOperador);
+    @PutMapping("/actualizar/{dni}")
+    public ResponseEntity<Map<String, String>> editar(@PathVariable String dni, @RequestBody Map<String, Object> payload) {
 
         String respuestaBd = Sistema.getInstancia().editarCliente(payload);
 

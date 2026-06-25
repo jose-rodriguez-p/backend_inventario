@@ -1,19 +1,13 @@
 package multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion;
-
-import java.sql.CallableStatement;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.Interfaces.TrabajadorDaoInterfas;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Trabajador;
-import static org.apache.commons.math3.stat.inference.TestUtils.t;
-
 public class TrabajadorDao implements TrabajadorDaoInterfas {
-
     @Override
     public ArrayList<Trabajador> listTrabajador() {
         ArrayList<Trabajador> trabajadores = new ArrayList<>();

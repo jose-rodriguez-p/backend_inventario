@@ -12,7 +12,7 @@ public class ConexionDB {
     private HikariDataSource dataSource; 
 
     private ConexionDB() {
-        Properties properties = multiservicioRafael.invenatario.CodigoFuente.EnvLoader.loadProperties();
+        Properties properties = multiservicioRafael.invenatario.CodigoFuente.ConfigreConect.EnvLoader.loadProperties();
 
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(properties.getProperty("url"));

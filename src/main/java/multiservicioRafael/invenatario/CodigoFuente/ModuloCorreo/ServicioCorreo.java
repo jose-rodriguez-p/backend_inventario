@@ -146,6 +146,6 @@ public class ServicioCorreo {
     }
 
     private Properties cargarConfiguracion() {
-        return multiservicioRafael.invenatario.CodigoFuente.EnvLoader.loadProperties();
+        return multiservicioRafael.invenatario.CodigoFuente.ConfigreConect.EnvLoader.loadProperties();
     }
 }
