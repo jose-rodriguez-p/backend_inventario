@@ -68,8 +68,8 @@ public class ControladorCliente {
     public ResponseEntity<?> listarClientes() {
 
         try {
-            List<Map<String, Object>> resultado =
-                    Sistema.getInstancia().listarClientesConCarros();
+            List<Map<String, Object>> resultado
+                    = Sistema.getInstancia().listarClientesConCarros();
 
             return ResponseEntity.ok(resultado);
 
@@ -95,8 +95,8 @@ public class ControladorCliente {
         }
     }
 
-    @PutMapping("/actualizar/{dni}")
-    public ResponseEntity<Map<String, String>> editar(@PathVariable String dni, @RequestBody Map<String, Object> payload) {
+    @PutMapping("/actualizar")
+    public ResponseEntity<Map<String, String>> editar(@RequestBody Map<String, Object> payload) {
 
         String respuestaBd = Sistema.getInstancia().editarCliente(payload);
 
@@ -105,8 +105,10 @@ public class ControladorCliente {
 
         if ("editado".equals(respuestaBd)) {
             return ResponseEntity.ok(respuestaJson);
+        } else if (respuestaBd != null && respuestaBd.startsWith("error_validacion")) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(respuestaJson); 
         } else {
-            return ResponseEntity.badRequest().body(respuestaJson);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaJson); 
         }
     }
 
@@ -114,11 +116,11 @@ public class ControladorCliente {
     public ResponseEntity<byte[]> exportarPDF(@RequestBody List<Map<String, Object>> clientes) {
         try {
             byte[] pdfBytes = Sistema.getInstancia().generarPDFBytesClientes(clientes);
-            
+
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
             headers.setContentDispositionFormData("attachment", "reporte_clientes.pdf");
-            
+
             return ResponseEntity.ok()
                     .headers(headers)
                     .body(pdfBytes);
@@ -131,11 +133,11 @@ public class ControladorCliente {
     public ResponseEntity<byte[]> exportarExcel(@RequestBody List<Map<String, Object>> clientes) {
         try {
             byte[] excelBytes = Sistema.getInstancia().generarExcelBytesClientes(clientes);
-            
+
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(new MediaType("application", "vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
             headers.setContentDispositionFormData("attachment", "reporte_clientes.xlsx");
-            
+
             return ResponseEntity.ok()
                     .headers(headers)
                     .body(excelBytes);

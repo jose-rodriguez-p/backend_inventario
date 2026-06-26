@@ -123,7 +123,8 @@ public class ClienteDao implements ClienteDaoInterfas {
             sb.append("{");
             sb.append("\"placa\":\"").append(carro.get("placa")).append("\",");
             sb.append("\"marca\":\"").append(carro.get("marca")).append("\",");
-            sb.append("\"modelo\":\"").append(carro.get("modelo")).append("\"");
+            sb.append("\"modelo\":\"").append(carro.get("modelo")).append("\",");
+            sb.append("\"anio\":\"").append(carro.get("anio")).append("\"");
             sb.append("}");
 
             if (i < carros.size() - 1) {
@@ -163,5 +164,4 @@ public class ClienteDao implements ClienteDaoInterfas {
         }
         return resultado;
     }
-
 }

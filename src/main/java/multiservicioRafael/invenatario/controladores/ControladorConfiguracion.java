@@ -2,6 +2,7 @@ package multiservicioRafael.invenatario.controladores;
 
 import java.util.List;
 import java.util.Map;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Categoria;
 import multiservicioRafael.invenatario.CodigoFuente.Sistema;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -91,5 +92,73 @@ public class ControladorConfiguracion {
         }
     }
 
-   
+    @GetMapping("/listar-categorias")
+    public ResponseEntity<?> obtenerCategorias() {
+        try {
+            List<Categoria> lista = Sistema.getInstancia().listarCategoria();
+            if (lista == null || lista.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body("LISTA_VACIA");
+            }
+            return ResponseEntity.ok(lista);
+
+        } catch (Exception e) {
+            System.out.println("Error en controlador obtenerCategorias: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR_INTERNO");
+        }
+    }
+
+    @PutMapping("/categorias/estado")
+    public ResponseEntity<String> modificarEstadoCategoria(
+            @RequestParam String nombreCategoria,
+            @RequestParam String nuevoEstado) {
+
+        try {
+
+            String respuesta = Sistema.getInstancia()
+                    .modificarEstadoCategoriaSistema(
+                            nombreCategoria,
+                            nuevoEstado
+                    );
+            System.out.println(respuesta);
+
+            if (respuesta.equals("OK")) {
+                return ResponseEntity.ok(respuesta);
+            }
+
+            return ResponseEntity.badRequest().body(respuesta);
+
+        } catch (Exception e) {
+
+            System.out.println("Error en controlador al modificar estado: "
+                    + e.getMessage());
+
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("ERROR: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/categorias/crear")
+    public ResponseEntity<String> crearCategoria(
+            @RequestBody Categoria nuevaCategoria) {
+
+        try {
+
+            String respuesta = Sistema.getInstancia()
+                    .agregarCategoriaSistema(nuevaCategoria);
+
+            if (respuesta.equals("OK")) {
+                return ResponseEntity.ok(respuesta);
+            }
+
+            return ResponseEntity.badRequest().body(respuesta);
+
+        } catch (Exception e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("ERROR: " + e.getMessage());
+        }
+    }
+
 }

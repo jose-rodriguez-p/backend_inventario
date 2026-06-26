@@ -9,7 +9,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Categoria;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.ClienteDao;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.ConfiguracionDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.LoginDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.MenuDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.ProveedorDao;
@@ -480,6 +482,7 @@ public class Sistema {
             if (cliente == null || cliente.get("dni") == null) {
                 return "error_validacion: Falta el DNI del cliente";
             }
+
             return this.clienteDao.editarClienteConCarros(cliente, carros, this.usuario);
         } catch (Exception e) {
             System.out.println("Error en editarCliente: " + e.getMessage());
@@ -507,7 +510,7 @@ public class Sistema {
             String resultado = login.resetearContrasena(usuario.trim());
 
             if ("PASSWORD_RESETEADA".equals(resultado)) {
-                return true; 
+                return true;
             } else {
                 System.out.println("No se pudo resetear la contraseña. Motivo: " + resultado);
                 return false;
@@ -517,6 +520,55 @@ public class Sistema {
             System.out.println("Error en la capa de Sistema al restablecer contraseña: " + e.getMessage());
             return false;
         }
+    }
+
+    public List<Categoria> listarCategoria() {
+        ConfiguracionDao configuracion = new ConfiguracionDao();
+        List<Categoria> lista = configuracion.listarCategorias();
+
+        if (lista == null || lista.isEmpty()) {
+            System.out.println("No se encontraron categorías o la lista está vacía.");
+        } else {
+            System.out.println("Categorías cargadas correctamente. Total: " + lista.size());
+        }
+
+        return lista;
+    }
+
+    public String agregarCategoriaSistema(Categoria categoria) {
+
+        if (categoria == null) {
+            return "ERROR: La categoría es nula.";
+        }
+
+        if (categoria.getNombre() == null || categoria.getNombre().trim().isEmpty()) {
+            return "ERROR: El nombre de la categoría no puede estar vacío.";
+        }
+
+        if (categoria.getEstado() == null || categoria.getEstado().trim().isEmpty()) {
+            return "ERROR: El estado de la categoría no puede estar vacío.";
+        }
+        ConfiguracionDao dao = new ConfiguracionDao();
+        System.out.println(this.usuario);
+        return dao.agregarCategoriaConFuncion(this.usuario, categoria);
+    }
+
+    public String modificarEstadoCategoriaSistema(String nombreCategoria, String nuevoEstado) {
+        System.out.println(this.usuario);
+
+        if (nombreCategoria == null || nombreCategoria.trim().isEmpty()) {
+            return "ERROR: El nombre de la categoría no puede estar vacío.";
+        }
+
+        if (nuevoEstado == null || nuevoEstado.trim().isEmpty()) {
+            return "ERROR: El nuevo estado no puede estar vacío.";
+        }
+        ConfiguracionDao dao = new ConfiguracionDao();
+        return dao.modificarEstadoCategoriaConFuncion(
+                this.usuario,
+                nombreCategoria.trim(),
+                nuevoEstado.trim()
+        );
     }
 
 }
