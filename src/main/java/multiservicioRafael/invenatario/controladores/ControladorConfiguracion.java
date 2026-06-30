@@ -161,4 +161,65 @@ public class ControladorConfiguracion {
         }
     }
 
+    @GetMapping("/marcas-categorias")
+    public ResponseEntity<?> listarMarcasConCategorias() {
+        try {
+            List<multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Marca> lista = Sistema.getInstancia().obtenerMarcasConCategorias();
+            if (lista == null || lista.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body("LISTA_VACIA");
+            }
+            return ResponseEntity.ok(lista);
+        } catch (Exception e) {
+            System.out.println("Error en controlador listarMarcasConCategorias: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR_INTERNO");
+        }
+    }
+
+    @PostMapping("/marcas/crear")
+    public ResponseEntity<String> crearMarcaConCategorias(@RequestBody Map<String, Object> datos) {
+        try {
+            String marcaNombre = (String) datos.get("marcaNombre");
+            String marcaEstado = (String) datos.get("marcaEstado");
+            List<String> categoriasNombres = (List<String>) datos.get("categoriasNombres");
+
+            if (marcaNombre == null || marcaEstado == null || categoriasNombres == null) {
+                return ResponseEntity.badRequest().body("ERROR: Datos incompletos");
+            }
+
+            String respuesta = Sistema.getInstancia().agregarMarcaConCategoriasSistema(marcaNombre, marcaEstado, categoriasNombres);
+
+            if (respuesta.equals("OK")) {
+                return ResponseEntity.ok(respuesta);
+            }
+
+            return ResponseEntity.badRequest().body(respuesta);
+        } catch (Exception e) {
+            System.out.println("Error en controlador al crear marca: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR: " + e.getMessage());
+        }
+    }
+    @PutMapping("/marcas/editar")
+    public ResponseEntity<String> editarMarcaConCategorias(@RequestBody Map<String, Object> datos) {
+        try {
+            String marcaNombre = (String) datos.get("marcaNombre");
+            String marcaEstadoNuevo = (String) datos.get("marcaEstadoNuevo");
+            List<String> categoriasNombres = (List<String>) datos.get("categoriasNombres");
+
+            if (marcaNombre == null || marcaEstadoNuevo == null || categoriasNombres == null) {
+                return ResponseEntity.badRequest().body("ERROR: Datos incompletos");
+            }
+
+            String respuesta = Sistema.getInstancia().editarMarcaConCategoriasSistema(marcaNombre, marcaEstadoNuevo, categoriasNombres);
+
+            if (respuesta.equals("OK")) {
+                return ResponseEntity.ok(respuesta);
+            }
+
+            return ResponseEntity.badRequest().body(respuesta);
+        } catch (Exception e) {
+            System.out.println("Error en controlador al editar marca: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR: " + e.getMessage());
+        }
+    }
+
 }

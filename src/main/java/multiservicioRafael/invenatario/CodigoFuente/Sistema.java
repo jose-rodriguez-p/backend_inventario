@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Categoria;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Marca;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.ClienteDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.ConfiguracionDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.LoginDao;
@@ -569,6 +570,26 @@ public class Sistema {
                 nombreCategoria.trim(),
                 nuevoEstado.trim()
         );
+    }
+
+    public List<Marca> obtenerMarcasConCategorias() {
+        ConfiguracionDao configuracionDao = new ConfiguracionDao();
+        return configuracionDao.listarMarcasConCategorias();
+    }
+
+    public String agregarMarcaConCategoriasSistema(String marcaNombre, String marcaEstado, List<String> categoriasNombres) {
+        ConfiguracionDao configuracionDao = new ConfiguracionDao();
+        return configuracionDao.agregarMarcaConCategorias(this.usuario, marcaNombre, marcaEstado, categoriasNombres);
+    }
+
+    public String editarMarcaConCategoriasSistema(String marcaNombre, String marcaEstadoNuevo, List<String> categoriasNombres) {
+        ConfiguracionDao configuracionDao = new ConfiguracionDao();
+        return configuracionDao.editarMarcaConCategorias(this.usuario, marcaNombre, marcaEstadoNuevo, categoriasNombres);
+    }
+
+    public List<Map<String, Object>> listarCategoriasConMarcas() {
+        ConfiguracionDao configuracionDao = new ConfiguracionDao();
+        return configuracionDao.listarCategoriasConMarcas();
     }
 
 }

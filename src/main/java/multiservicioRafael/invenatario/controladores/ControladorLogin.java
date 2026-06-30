@@ -149,5 +149,5 @@ public class ControladorLogin {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR_INTERNO");
         }
     }
-    
+
 }
