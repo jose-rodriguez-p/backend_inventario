@@ -16,6 +16,7 @@ import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.C
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.LoginDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.MenuDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.ProveedorDao;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.RepuestoDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.RolDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.TrabajadorDao;
 import multiservicioRafael.invenatario.CodigoFuente.ModuloCorreo.ServicioCorreo;
@@ -196,6 +197,21 @@ public class Sistema {
         String[] keys = {"dni", "nombre", "apellido_paterno", "apellido_materno", "celular", "correo", "estado", "vehiculos"};
 
         return exportador.generarExcel("Reporte de Clientes", headers, keys, clientes);
+    }
+
+    public byte[] generarPDFBytesRepuestos(List<Map<String, Object>> repuestos) throws Exception {
+        String[] headers = {"Producto", "Marca", "Categoría", "Proveedor", "Stock", "Stock Mínimo", "Precio Venta", "Estado"};
+        String[] keys = {"nombre", "marca", "categoria", "nombre_proveedor", "stock", "stock_minimo", "precio_venta", "estado"};
+        float[] pesos = {3.5f, 3f, 3f, 3.5f, 2f, 2f, 2.5f, 2f};
+
+        return exportador.generarPDF("Reporte de Productos", headers, keys, pesos, repuestos);
+    }
+
+    public byte[] generarExcelBytesRepuestos(List<Map<String, Object>> repuestos) throws Exception {
+        String[] headers = {"PRODUCTO", "MARCA", "CATEGORÍA", "PROVEEDOR", "STOCK", "STOCK MÍNIMO", "PRECIO VENTA", "ESTADO"};
+        String[] keys = {"nombre", "marca", "categoria", "nombre_proveedor", "stock", "stock_minimo", "precio_venta", "estado"};
+
+        return exportador.generarExcel("Reporte de Productos", headers, keys, repuestos);
     }
 
     // --- MÉTODOS DE ACCESO A DATOS (GETTERS) ---
@@ -590,6 +606,29 @@ public class Sistema {
     public List<Map<String, Object>> listarCategoriasConMarcas() {
         ConfiguracionDao configuracionDao = new ConfiguracionDao();
         return configuracionDao.listarCategoriasConMarcas();
+    }
+
+    public List<Map<String, Object>> listarRepuestos() {
+        RepuestoDao repuesto = new RepuestoDao();
+        return repuesto.listarRepuestos();
+    }
+
+    public String agregarRepuestoSistema(String nombre, String categoriaNombre, String marcaNombre,
+            String proveedorNombre, int cantidad, java.math.BigDecimal precioCompra,
+            java.math.BigDecimal precioVenta, int stockMinimo, String estado) {
+        RepuestoDao repuestoDao = new RepuestoDao();
+        return repuestoDao.agregarRepuesto(this.usuario, nombre, categoriaNombre, marcaNombre,
+                proveedorNombre, cantidad, precioCompra, precioVenta,
+                stockMinimo, estado);
+    }
+
+    public String editarRepuestoSistema(String nombre, String categoriaNombre, String marcaNombre,
+            String proveedorNombre, int cantidad, java.math.BigDecimal precioCompra,
+            java.math.BigDecimal precioVenta, int stockMinimo, String estado) {
+        RepuestoDao repuestoDao = new RepuestoDao();
+        return repuestoDao.editarRepuesto(this.usuario, nombre, categoriaNombre, marcaNombre,
+                proveedorNombre, cantidad, precioCompra, precioVenta,
+                stockMinimo, estado);
     }
 
 }
