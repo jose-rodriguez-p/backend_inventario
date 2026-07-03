@@ -19,6 +19,7 @@ import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.P
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.RepuestoDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.RolDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.TrabajadorDao;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.VentasDao;
 import multiservicioRafael.invenatario.CodigoFuente.ModuloCorreo.ServicioCorreo;
 import multiservicioRafael.invenatario.CodigoFuente.Patrones.GeneradorCodigo;
 import multiservicioRafael.invenatario.CodigoFuente.Patrones.RegistroCodigosVerificacion;
@@ -438,6 +439,7 @@ public class Sistema {
 
     //metodos de clientes
     ClienteDao clienteDao = new ClienteDao();
+    VentasDao ventasDao = new VentasDao();
 
     public boolean consultarDBclienteExiste(String dni) {
         return clienteDao.validarExisteCliente(dni);
@@ -629,6 +631,19 @@ public class Sistema {
         return repuestoDao.editarRepuesto(this.usuario, nombre, categoriaNombre, marcaNombre,
                 proveedorNombre, cantidad, precioCompra, precioVenta,
                 stockMinimo, estado);
+    }
+
+    // Métodos de ventas
+    public String registrarVenta(String usuarioNombre, String clienteDni, String tipoComprobante, String serie,
+                                 String estado, String metodoPago, String fechaEmision, double descuentoGlobal,
+                                 String tipoDescuento, String nota, List<Map<String, Object>> detalle) {
+        return ventasDao.registrarVenta(usuarioNombre, clienteDni, tipoComprobante, serie,
+                                        estado, metodoPago, fechaEmision, descuentoGlobal,
+                                        tipoDescuento, nota, detalle);
+    }
+
+    public Map<String, Object> listarVentas(String busqueda, int pagina, int porPagina) {
+        return ventasDao.listarVentas(busqueda, pagina, porPagina);
     }
 
 }
