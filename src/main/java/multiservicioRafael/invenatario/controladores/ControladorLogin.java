@@ -1,6 +1,6 @@
 package multiservicioRafael.invenatario.controladores;
 
-import multiservicioRafael.invenatario.CodigoFuente.Sistema;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.AutenticacionFachada;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Usuario;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +11,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 public class ControladorLogin {
+
+    private final AutenticacionFachada autenticacionFachada = new AutenticacionFachada();
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest credenciales) {
@@ -26,7 +28,7 @@ public class ControladorLogin {
                     .body(Map.of("error", "CREDENCIALES_INVALIDAS"));
         }
 
-        Usuario usuario = Sistema.getInstancia().procesarLogin(
+        Usuario usuario = autenticacionFachada.procesarLogin(
                 credenciales.getUsername().trim(),
                 credenciales.getPassword()
         );
@@ -43,8 +45,7 @@ public class ControladorLogin {
     @GetMapping("/validar-usuario/{username}")
     public ResponseEntity<Map<String, String>> validarUsuario(@PathVariable String username) {
 
-        String resultado = Sistema.getInstancia()
-                .validarUsuarioExistente(username.trim());
+        String resultado = autenticacionFachada.validarUsuarioExistente(username.trim());
 
         if ("ERROR".equalsIgnoreCase(resultado)) {
             return ResponseEntity
@@ -66,8 +67,7 @@ public class ControladorLogin {
 
         String usuario = solicitud.getUsername().trim();
 
-        String correo = Sistema.getInstancia()
-                .validarUsuarioExistente(usuario);
+        String correo = autenticacionFachada.validarUsuarioExistente(usuario);
 
         if ("ERROR".equalsIgnoreCase(correo)) {
             return ResponseEntity
@@ -75,8 +75,7 @@ public class ControladorLogin {
                     .body(Map.of("status", "ERROR"));
         }
 
-        String resultado = Sistema.getInstancia()
-                .enviarCodigoVerificacion(usuario, correo);
+        String resultado = autenticacionFachada.enviarCodigoVerificacion(usuario, correo);
 
         return ResponseEntity.ok(Map.of("status", resultado));
     }
@@ -94,7 +93,7 @@ public class ControladorLogin {
                     .body(Map.of("status", "CODIGO_INVALIDO"));
         }
 
-        String resultado = Sistema.getInstancia().validarCodigoIngresado(
+        String resultado = autenticacionFachada.validarCodigoIngresado(
                 solicitud.getUsername().trim(),
                 solicitud.getCodigo()
         );
@@ -116,7 +115,7 @@ public class ControladorLogin {
                     .body(Map.of("status", "ERROR"));
         }
 
-        boolean actualizado = Sistema.getInstancia().actualizarContrasena(
+        boolean actualizado = autenticacionFachada.actualizarContrasena(
                 solicitud.getUsername().trim(),
                 solicitud.getNewPassword()
         );
@@ -137,7 +136,7 @@ public class ControladorLogin {
             if (username == null || username.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("DATOS_INCOMPLETOS");
             }
-            boolean reseteado = Sistema.getInstancia().restablecerContrasenaUsuario(username);
+            boolean reseteado = autenticacionFachada.restablecerContrasenaUsuario(username);
 
             if (reseteado) {
                 return ResponseEntity.ok("PASSWORD_RESETEADA");

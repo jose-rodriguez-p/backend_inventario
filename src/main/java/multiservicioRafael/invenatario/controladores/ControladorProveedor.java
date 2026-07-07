@@ -1,6 +1,7 @@
 package multiservicioRafael.invenatario.controladores;
 
-import multiservicioRafael.invenatario.CodigoFuente.Sistema;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.ProveedorFachada;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.UsuarioLogeado;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Proveedor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,17 +13,19 @@ import java.util.Map;
 @RequestMapping("/api/proveedores")
 public class ControladorProveedor {
 
+    private final ProveedorFachada proveedorFachada = new ProveedorFachada();
+
     @GetMapping("/listar")
     public ResponseEntity<List<Proveedor>> listarProveedores() {
         return ResponseEntity.ok(
-                Sistema.getInstancia().obtenerListaProveedores()
+                proveedorFachada.obtenerListaProveedores()
         );
     }
 
     @GetMapping("/buscar-ruc/{ruc}")
     public ResponseEntity<?> buscarRuc(@PathVariable String ruc) {
 
-        var datosEmpresa = Sistema.getInstancia().consutaRuc(ruc);
+        var datosEmpresa = proveedorFachada.consultaRuc(ruc);
 
         if (datosEmpresa != null && !datosEmpresa.isEmpty()) {
             return ResponseEntity.ok(datosEmpresa);
@@ -39,8 +42,8 @@ public class ControladorProveedor {
         String dni = request.get("dni");
         String correo = request.get("correo");
 
-        String resultado = Sistema.getInstancia()
-                .enviarCodigoVerificacion(dni, correo);
+        // TODO: Implementar envío de código en ProveedorFachada
+        String resultado = "TODO: Implementar en ProveedorFachada";
 
         return ResponseEntity.ok(resultado);
     }
@@ -51,8 +54,8 @@ public class ControladorProveedor {
         String dni = request.get("dni");
         String codigo = request.get("codigo");
 
-        String resultado = Sistema.getInstancia()
-                .validarCodigoIngresado(dni, codigo);
+        // TODO: Implementar validación de código en ProveedorFachada
+        String resultado = "TODO: Implementar en ProveedorFachada";
 
         return ResponseEntity.ok(resultado);
     }
@@ -65,8 +68,7 @@ public class ControladorProveedor {
 
         proveedorActualizado.setRuc(ruc);
 
-        boolean exito = Sistema.getInstancia()
-                .actualizarDatosProveedor(ruc, proveedorActualizado);
+        boolean exito = proveedorFachada.actualizarDatosProveedor(proveedorActualizado, UsuarioLogeado.getUsuario());
 
         if (exito) {
             return ResponseEntity.ok("Proveedor actualizado con éxito");
@@ -80,8 +82,7 @@ public class ControladorProveedor {
     @PostMapping("/agregar")
     public ResponseEntity<String> agregarProveedor(@RequestBody Proveedor nuevoProveedor) {
 
-        boolean creado = Sistema.getInstancia()
-                .registrarProveedor(nuevoProveedor);
+        boolean creado = proveedorFachada.registrarProveedor(nuevoProveedor, UsuarioLogeado.getUsuario());
 
         if (creado) {
             return ResponseEntity.ok("Proveedor registrado exitosamente");
@@ -96,8 +97,7 @@ public class ControladorProveedor {
     public ResponseEntity<byte[]> exportarPDF(@RequestBody List<Map<String, Object>> proveedores) {
 
         try {
-            byte[] pdfBytes =
-                    Sistema.getInstancia().generarPDFBytesProveedores(proveedores);
+            byte[] pdfBytes = proveedorFachada.generarPDFBytesProveedores(proveedores);
 
             return ResponseEntity.ok()
                     .header("Content-Type", "application/pdf")
@@ -114,8 +114,7 @@ public class ControladorProveedor {
     public ResponseEntity<byte[]> exportarExcel(@RequestBody List<Map<String, Object>> proveedores) {
 
         try {
-            byte[] excelBytes =
-                    Sistema.getInstancia().generarExcelBytesProveedores(proveedores);
+            byte[] excelBytes = proveedorFachada.generarExcelBytesProveedores(proveedores);
 
             return ResponseEntity.ok()
                     .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")

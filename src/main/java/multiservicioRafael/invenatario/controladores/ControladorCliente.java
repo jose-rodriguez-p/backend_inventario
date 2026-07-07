@@ -1,7 +1,9 @@
 package multiservicioRafael.invenatario.controladores;
 
 import java.util.HashMap;
-import multiservicioRafael.invenatario.CodigoFuente.Sistema;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.ClienteFachada;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.AutenticacionFachada;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.UsuarioLogeado;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,10 +17,13 @@ import org.springframework.http.MediaType;
 @RequestMapping("/api/clientes")
 public class ControladorCliente {
 
+    private final ClienteFachada clienteFachada = new ClienteFachada();
+    private final AutenticacionFachada autenticacionFachada = new AutenticacionFachada();
+
     @GetMapping("/buscar-dni/{dni}")
     public ResponseEntity<Map<String, Object>> buscarDni(@PathVariable String dni) {
 
-        boolean existeEnDB = Sistema.getInstancia().consultarDBclienteExiste(dni);
+        boolean existeEnDB = clienteFachada.consultarDBclienteExiste(dni);
 
         if (existeEnDB) {
             return ResponseEntity
@@ -29,7 +34,7 @@ public class ControladorCliente {
                     ));
         }
 
-        Map<String, Object> respuesta = Sistema.getInstancia().consultarDNIParseado(dni);
+        Map<String, Object> respuesta = clienteFachada.consultarDNIParseado(dni);
 
         if (Boolean.TRUE.equals(respuesta.get("success"))) {
             return ResponseEntity.ok(respuesta);
@@ -46,8 +51,7 @@ public class ControladorCliente {
         String dni = request.get("dni");
         String correo = request.get("correo");
 
-        String resultado = Sistema.getInstancia()
-                .enviarCodigoVerificacion(dni, correo);
+        String resultado = autenticacionFachada.enviarCodigoVerificacion(dni, correo);
 
         return ResponseEntity.ok(resultado);
     }
@@ -58,8 +62,7 @@ public class ControladorCliente {
         String dni = request.get("dni");
         String codigo = request.get("codigo");
 
-        String resultado = Sistema.getInstancia()
-                .validarCodigoIngresado(dni, codigo);
+        String resultado = autenticacionFachada.validarCodigoIngresado(dni, codigo);
 
         return ResponseEntity.ok(resultado);
     }
@@ -68,8 +71,7 @@ public class ControladorCliente {
     public ResponseEntity<?> listarClientes() {
 
         try {
-            List<Map<String, Object>> resultado
-                    = Sistema.getInstancia().listarClientesConCarros();
+            List<Map<String, Object>> resultado = clienteFachada.listarClientesConCarros();
 
             return ResponseEntity.ok(resultado);
 
@@ -83,7 +85,7 @@ public class ControladorCliente {
     @PostMapping("/registrar")
     public ResponseEntity<Map<String, String>> registrar(@RequestBody Map<String, Object> payload) {
 
-        String respuestaBd = Sistema.getInstancia().agregarCliente(payload);
+        String respuestaBd = clienteFachada.agregarCliente(payload, UsuarioLogeado.getUsuario());
 
         Map<String, String> respuestaJson = new HashMap<>();
         respuestaJson.put("status", respuestaBd);
@@ -98,7 +100,7 @@ public class ControladorCliente {
     @PutMapping("/actualizar")
     public ResponseEntity<Map<String, String>> editar(@RequestBody Map<String, Object> payload) {
 
-        String respuestaBd = Sistema.getInstancia().editarCliente(payload);
+        String respuestaBd = clienteFachada.editarCliente(payload, UsuarioLogeado.getUsuario());
 
         Map<String, String> respuestaJson = new HashMap<>();
         respuestaJson.put("status", respuestaBd);
@@ -115,7 +117,7 @@ public class ControladorCliente {
     @PostMapping("/export/pdf")
     public ResponseEntity<byte[]> exportarPDF(@RequestBody List<Map<String, Object>> clientes) {
         try {
-            byte[] pdfBytes = Sistema.getInstancia().generarPDFBytesClientes(clientes);
+            byte[] pdfBytes = clienteFachada.generarPDFBytesClientes(clientes);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
@@ -132,7 +134,7 @@ public class ControladorCliente {
     @PostMapping("/export/excel")
     public ResponseEntity<byte[]> exportarExcel(@RequestBody List<Map<String, Object>> clientes) {
         try {
-            byte[] excelBytes = Sistema.getInstancia().generarExcelBytesClientes(clientes);
+            byte[] excelBytes = clienteFachada.generarExcelBytesClientes(clientes);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(new MediaType("application", "vnd.openxmlformats-officedocument.spreadsheetml.sheet"));

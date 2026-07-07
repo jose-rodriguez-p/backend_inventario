@@ -4,7 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import multiservicioRafael.invenatario.CodigoFuente.Sistema;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.TrabajadorFachada;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.UsuarioLogeado;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Trabajador;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,24 +15,26 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/trabajadores")
 public class ControladorTrabajador {
 
+    private final TrabajadorFachada trabajadorFachada = new TrabajadorFachada();
+
     @GetMapping("/listar")
     public ResponseEntity<List<Trabajador>> listarTrabajadores() {
         return ResponseEntity.ok(
-                Sistema.getInstancia().obtenerListaTrabajadores()
+                trabajadorFachada.obtenerListaTrabajadores()
         );
     }
 
     @GetMapping("/documentos")
     public ResponseEntity<List<Map<String, Object>>> listarDocumentos() {
         return ResponseEntity.ok(
-                Sistema.getInstancia().obtenerListaDocumentos()
+                trabajadorFachada.obtenerListaDocumentos()
         );
     }
 
     @GetMapping("/cargos")
     public ResponseEntity<List<Map<String, Object>>> listarCargos() {
         return ResponseEntity.ok(
-                Sistema.getInstancia().obtenerListaCargos()
+                trabajadorFachada.obtenerListaCargos()
         );
     }
 
@@ -39,7 +42,7 @@ public class ControladorTrabajador {
     public ResponseEntity<Map<String, Object>> validarDniExistente(@PathVariable String dni) {
 
         Map<String, Object> resp = new HashMap<>();
-        resp.put("existe", Sistema.getInstancia().existeDniTrabajador(dni));
+        resp.put("existe", trabajadorFachada.existeDniTrabajador(dni));
 
         return ResponseEntity.ok(resp);
     }
@@ -49,7 +52,7 @@ public class ControladorTrabajador {
 
         try {
             String resultado =
-                    Sistema.getInstancia().nuevoTrabajador(datos);
+                    trabajadorFachada.nuevoTrabajador(datos, UsuarioLogeado.getUsuario());
 
             if ("insertado".equalsIgnoreCase(resultado)) {
                 return ResponseEntity.ok("Trabajador registrado exitosamente");
@@ -73,7 +76,7 @@ public class ControladorTrabajador {
 
         try {
             String resultado =
-                    Sistema.getInstancia().actualizarTrabajador(dni, datosActualizados);
+                    trabajadorFachada.actualizarTrabajador(dni, datosActualizados, UsuarioLogeado.getUsuario());
 
             if ("actualizado".equalsIgnoreCase(resultado)) {
                 return ResponseEntity.ok("Trabajador actualizado exitosamente");
@@ -94,8 +97,7 @@ public class ControladorTrabajador {
     public ResponseEntity<byte[]> exportarPDF(@RequestBody List<Map<String, Object>> trabajadores) {
 
         try {
-            byte[] pdfBytes =
-                    Sistema.getInstancia().generarPDFBytes(trabajadores);
+            byte[] pdfBytes = trabajadorFachada.generarPDFBytes(trabajadores);
 
             return ResponseEntity.ok()
                     .header("Content-Type", "application/pdf")
@@ -111,8 +113,7 @@ public class ControladorTrabajador {
     public ResponseEntity<byte[]> exportarExcel(@RequestBody List<Map<String, Object>> trabajadores) {
 
         try {
-            byte[] excelBytes =
-                    Sistema.getInstancia().generarExcelBytes(trabajadores);
+            byte[] excelBytes = trabajadorFachada.generarExcelBytes(trabajadores);
 
             return ResponseEntity.ok()
                     .header("Content-Type",
@@ -128,8 +129,10 @@ public class ControladorTrabajador {
     @GetMapping("/buscar-dni/{dni}")
     public ResponseEntity<Map<String, Object>> buscarDni(@PathVariable String dni) {
 
-        Map<String, Object> respuesta =
-                Sistema.getInstancia().consultarDNIParseado(dni);
+        // TODO: Implementar consultarDNIParseado en TrabajadorFachada
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("success", false);
+        respuesta.put("message", "TODO: Implementar en TrabajadorFachada");
 
         if (Boolean.TRUE.equals(respuesta.get("success"))) {
             return ResponseEntity.ok(respuesta);
@@ -146,8 +149,8 @@ public class ControladorTrabajador {
         String dni = request.get("dni");
         String correo = request.get("correo");
 
-        String resultado =
-                Sistema.getInstancia().enviarCodigoVerificacion(dni, correo);
+        // TODO: Implementar envío de código en TrabajadorFachada
+        String resultado = "TODO: Implementar en TrabajadorFachada";
 
         return ResponseEntity.ok(resultado);
     }
@@ -158,8 +161,8 @@ public class ControladorTrabajador {
         String dni = request.get("dni");
         String codigo = request.get("codigo");
 
-        String resultado =
-                Sistema.getInstancia().validarCodigoIngresado(dni, codigo);
+        // TODO: Implementar validación de código en TrabajadorFachada
+        String resultado = "TODO: Implementar en TrabajadorFachada";
 
         return ResponseEntity.ok(resultado);
     }

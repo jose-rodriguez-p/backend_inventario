@@ -1,3 +1,4 @@
+package multiservicioRafael.invenatario.CodigoFuente.ClasesFachda;
 
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Trabajador;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.TrabajadorDao;

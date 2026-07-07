@@ -1,7 +1,7 @@
 
 package multiservicioRafael.invenatario.controladores;
 
-import multiservicioRafael.invenatario.CodigoFuente.Sistema;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.VentasFachada;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 @RestController
 @RequestMapping("/api/ventas")
 public class ControladorVentas {
+
+    private final VentasFachada ventasFachada = new VentasFachada();
 
     @PostMapping("/registrar")
     public ResponseEntity<Map<String, Object>> registrarVenta(@RequestBody Map<String, Object> datos) {
@@ -40,13 +42,13 @@ public class ControladorVentas {
             }
             String nota = (String) datos.get("nota");
             List<Map<String, Object>> detalle = (List<Map<String, Object>>) datos.get("items");
-            
-            String resultado = Sistema.getInstancia().registrarVenta(
+
+            String resultado = ventasFachada.registrarVenta(
                     usuarioNombre, clienteDni, tipoComprobante, serie,
                     estado, metodoPago, fechaEmision, descuentoGlobal,
                     tipoDescuento, nota, detalle
             );
-            
+
             if (resultado.equals("OK")) {
                 // Get the last inserted order ID (we can adjust later if needed)
                 return ResponseEntity.ok(Map.of(
@@ -71,7 +73,7 @@ public class ControladorVentas {
             @RequestParam(required = false, defaultValue = "1") int pagina,
             @RequestParam(required = false, defaultValue = "10") int porPagina) {
         try {
-            Map<String, Object> resultado = Sistema.getInstancia().listarVentas(busqueda, pagina, porPagina);
+            Map<String, Object> resultado = ventasFachada.listarVentas(busqueda, pagina, porPagina);
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
             e.printStackTrace();

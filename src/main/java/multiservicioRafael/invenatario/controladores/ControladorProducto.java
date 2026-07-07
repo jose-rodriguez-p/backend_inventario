@@ -1,6 +1,8 @@
 package multiservicioRafael.invenatario.controladores;
 
-import multiservicioRafael.invenatario.CodigoFuente.Sistema;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.ProductoFachada;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.CategoriaFachada;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.UsuarioLogeado;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Categoria;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Producto;
 import org.springframework.http.ResponseEntity;
@@ -17,16 +19,19 @@ import org.springframework.http.MediaType;
 @RequestMapping("/api/productos")
 public class ControladorProducto {
 
+    private final ProductoFachada productoFachada = new ProductoFachada();
+    private final CategoriaFachada categoriaFachada = new CategoriaFachada();
+
     @GetMapping("/listar")
     public ResponseEntity<List<Producto>> listarProductos() {
         return ResponseEntity.ok(
-                Sistema.getInstancia().obtenerListaProductos()
+                productoFachada.obtenerListaProductos()
         );
     }
 
     @GetMapping("/categorias")
     public ResponseEntity<?> listarCategorias() {
-        List<Categoria> categorias = Sistema.getInstancia().listarCategoria();
+        List<Categoria> categorias = categoriaFachada.listarCategoria();
         if (categorias == null || categorias.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NO_CONTENT).body("LISTA_VACIA");
         }
@@ -39,7 +44,7 @@ public class ControladorProducto {
     @GetMapping("/categorias-marcas")
     public ResponseEntity<?> listarCategoriasConMarcas() {
         try {
-            List<Map<String, Object>> lista = Sistema.getInstancia().listarCategoriasConMarcas();
+            List<Map<String, Object>> lista = productoFachada.listarCategoriasConMarcas();
             if (lista == null || lista.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NO_CONTENT).body("LISTA_VACIA");
             }
@@ -53,7 +58,7 @@ public class ControladorProducto {
     @GetMapping("/listar-repuestos")
     public ResponseEntity<?> listarRepuestos() {
         try {
-            List<Map<String, Object>> lista = Sistema.getInstancia().listarRepuestos();
+            List<Map<String, Object>> lista = productoFachada.listarRepuestos();
             if (lista == null || lista.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NO_CONTENT).body("LISTA_VACIA");
             }
@@ -77,9 +82,10 @@ public class ControladorProducto {
             int stockMinimo = ((Number) datos.get("stock_minimo")).intValue();
             String estado = (String) datos.get("estado");
 
-            String respuesta = Sistema.getInstancia().editarRepuestoSistema(
+            String respuesta = productoFachada.editarRepuesto(
                 nombre, categoriaNombre, marcaNombre, proveedorNombre,
-                cantidad, precioCompra, precioVenta, stockMinimo, estado
+                cantidad, precioCompra, precioVenta, stockMinimo, estado,
+                UsuarioLogeado.getUsuario()
             );
 
             if (respuesta.equals("OK")) {
@@ -106,9 +112,10 @@ public class ControladorProducto {
             int stockMinimo = ((Number) datos.get("stock_minimo")).intValue();
             String estado = (String) datos.get("estado");
 
-            String respuesta = Sistema.getInstancia().agregarRepuestoSistema(
+            String respuesta = productoFachada.agregarRepuesto(
                 nombre, categoriaNombre, marcaNombre, proveedorNombre,
-                cantidad, precioCompra, precioVenta, stockMinimo, estado
+                cantidad, precioCompra, precioVenta, stockMinimo, estado,
+                UsuarioLogeado.getUsuario()
             );
 
             if (respuesta.equals("OK")) {
@@ -125,11 +132,8 @@ public class ControladorProducto {
     @PostMapping("/export/pdf")
     public ResponseEntity<byte[]> exportarPDF(@RequestBody List<Map<String, Object>> repuestos) {
         try {
-            byte[] pdfBytes = Sistema.getInstancia().generarPDFBytesRepuestos(repuestos);
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.setContentDispositionFormData("attachment", "reporte_productos.pdf");
-            return ResponseEntity.ok().headers(headers).body(pdfBytes);
+            // TODO: Implementar exportación PDF en ProductoFachada
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
         } catch (Exception e) {
             System.out.println("Error al exportar PDF: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -139,11 +143,8 @@ public class ControladorProducto {
     @PostMapping("/export/excel")
     public ResponseEntity<byte[]> exportarExcel(@RequestBody List<Map<String, Object>> repuestos) {
         try {
-            byte[] excelBytes = Sistema.getInstancia().generarExcelBytesRepuestos(repuestos);
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(new MediaType("application", "vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
-            headers.setContentDispositionFormData("attachment", "reporte_productos.xlsx");
-            return ResponseEntity.ok().headers(headers).body(excelBytes);
+            // TODO: Implementar exportación Excel en ProductoFachada
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
         } catch (Exception e) {
             System.out.println("Error al exportar Excel: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

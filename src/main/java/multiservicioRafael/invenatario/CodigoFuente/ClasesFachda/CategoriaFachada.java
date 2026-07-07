@@ -19,15 +19,7 @@ public class CategoriaFachada {
     }
 
     public List<Categoria> listarCategoria() {
-        List<Categoria> lista = configuracionDao.listarCategorias();
-
-        if (lista == null || lista.isEmpty()) {
-            System.out.println("No se encontraron categorías o la lista está vacía.");
-        } else {
-            System.out.println("Categorías cargadas correctamente. Total: " + lista.size());
-        }
-
-        return lista;
+        return configuracionDao.listarCategorias();
     }
 
     public String agregarCategoriaSistema(Categoria categoria, String usuarioLogueado) {

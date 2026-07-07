@@ -2,6 +2,7 @@ package multiservicioRafael.invenatario.CodigoFuente.ClasesFachda;
 
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Usuario;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.LoginDao;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.UsuarioLogeado;
 import multiservicioRafael.invenatario.CodigoFuente.ModuloCorreo.ServicioCorreo;
 import multiservicioRafael.invenatario.CodigoFuente.Patrones.GeneradorCodigo;
 import multiservicioRafael.invenatario.CodigoFuente.Patrones.RegistroCodigosVerificacion;
@@ -14,7 +15,11 @@ public class AutenticacionFachada {
         this.loginDao = new LoginDao();
     }
     public Usuario procesarLogin(String usuario, String contrasena) {
-        return loginDao.validando(usuario, contrasena);
+        Usuario usuarioLogueado = loginDao.validando(usuario, contrasena);
+        if (usuarioLogueado != null) {
+            UsuarioLogeado.setUsuario(usuario);
+        }
+        return usuarioLogueado;
     }
     public boolean verificarContrasena(String username, String contrasenaActual) {
         Usuario usuario = loginDao.validando(username, contrasenaActual);

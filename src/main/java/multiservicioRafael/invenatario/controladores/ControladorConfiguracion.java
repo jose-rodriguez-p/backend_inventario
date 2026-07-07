@@ -3,7 +3,12 @@ package multiservicioRafael.invenatario.controladores;
 import java.util.List;
 import java.util.Map;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Categoria;
-import multiservicioRafael.invenatario.CodigoFuente.Sistema;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.CategoriaFachada;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.RolMenuFachada;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.AutenticacionFachada;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Marca;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.ConfiguracionDao;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.UsuarioLogeado;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,12 +17,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/configuracion")
 public class ControladorConfiguracion {
 
+    private final CategoriaFachada categoriaFachada = new CategoriaFachada();
+    private final RolMenuFachada rolMenuFachada = new RolMenuFachada();
+    private final AutenticacionFachada autenticacionFachada = new AutenticacionFachada();
+    private final ConfiguracionDao configuracionDao = new ConfiguracionDao();
+
     @GetMapping("/roles/listar")
     public ResponseEntity<List<Map<String, Object>>> listarRoles() {
 
         try {
-            List<Map<String, Object>> roles
-                    = Sistema.getInstancia().listarRoles();
+            List<Map<String, Object>> roles = rolMenuFachada.listarRoles();
 
             if (roles == null || roles.isEmpty()) {
                 return ResponseEntity.noContent().build();
@@ -34,10 +43,8 @@ public class ControladorConfiguracion {
 
     @PostMapping("/roles/crear")
     public ResponseEntity<Boolean> crearRol(@RequestBody Map<String, Object> nuevoRol) {
-
         try {
-            boolean guardado
-                    = Sistema.getInstancia().agregarRol(nuevoRol);
+            boolean guardado = rolMenuFachada.agregarRol(nuevoRol, UsuarioLogeado.getUsuario());
 
             if (guardado) {
                 return ResponseEntity.ok(true);
@@ -64,7 +71,7 @@ public class ControladorConfiguracion {
             if (username == null || contrasenaActual == null) {
                 return ResponseEntity.badRequest().body(false);
             }
-            boolean esValida = Sistema.getInstancia().verificarContrasena(username, contrasenaActual);
+            boolean esValida = autenticacionFachada.verificarContrasena(username, contrasenaActual);
 
             return ResponseEntity.ok(esValida);
         } catch (Exception e) {
@@ -80,7 +87,7 @@ public class ControladorConfiguracion {
             if (username == null || newPassword == null) {
                 return ResponseEntity.badRequest().body("DATOS_INCOMPLETOS");
             }
-            boolean actualizado = Sistema.getInstancia().actualizarContrasena(username, newPassword);
+            boolean actualizado = autenticacionFachada.actualizarContrasena(username, newPassword);
 
             if (actualizado) {
                 return ResponseEntity.ok("PASSWORD_ACTUALIZADA");
@@ -95,7 +102,7 @@ public class ControladorConfiguracion {
     @GetMapping("/listar-categorias")
     public ResponseEntity<?> obtenerCategorias() {
         try {
-            List<Categoria> lista = Sistema.getInstancia().listarCategoria();
+            List<Categoria> lista = categoriaFachada.listarCategoria();
             if (lista == null || lista.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NO_CONTENT).body("LISTA_VACIA");
             }
@@ -114,10 +121,10 @@ public class ControladorConfiguracion {
 
         try {
 
-            String respuesta = Sistema.getInstancia()
-                    .modificarEstadoCategoriaSistema(
+            String respuesta = categoriaFachada.modificarEstadoCategoriaSistema(
                             nombreCategoria,
-                            nuevoEstado
+                            nuevoEstado,
+                            UsuarioLogeado.getUsuario()
                     );
             System.out.println(respuesta);
 
@@ -144,8 +151,7 @@ public class ControladorConfiguracion {
 
         try {
 
-            String respuesta = Sistema.getInstancia()
-                    .agregarCategoriaSistema(nuevaCategoria);
+            String respuesta = categoriaFachada.agregarCategoriaSistema(nuevaCategoria, UsuarioLogeado.getUsuario());
 
             if (respuesta.equals("OK")) {
                 return ResponseEntity.ok(respuesta);
@@ -164,9 +170,9 @@ public class ControladorConfiguracion {
     @GetMapping("/marcas-categorias")
     public ResponseEntity<?> listarMarcasConCategorias() {
         try {
-            List<multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Marca> lista = Sistema.getInstancia().obtenerMarcasConCategorias();
+            List<Marca> lista = configuracionDao.listarMarcasConCategorias();
             if (lista == null || lista.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NO_CONTENT).body("LISTA_VACIA");
+                return ResponseEntity.ok(List.of());
             }
             return ResponseEntity.ok(lista);
         } catch (Exception e) {
@@ -186,7 +192,8 @@ public class ControladorConfiguracion {
                 return ResponseEntity.badRequest().body("ERROR: Datos incompletos");
             }
 
-            String respuesta = Sistema.getInstancia().agregarMarcaConCategoriasSistema(marcaNombre, marcaEstado, categoriasNombres);
+            String respuesta = configuracionDao.agregarMarcaConCategorias(
+                UsuarioLogeado.getUsuario(), marcaNombre, marcaEstado, categoriasNombres);
 
             if (respuesta.equals("OK")) {
                 return ResponseEntity.ok(respuesta);
@@ -209,7 +216,8 @@ public class ControladorConfiguracion {
                 return ResponseEntity.badRequest().body("ERROR: Datos incompletos");
             }
 
-            String respuesta = Sistema.getInstancia().editarMarcaConCategoriasSistema(marcaNombre, marcaEstadoNuevo, categoriasNombres);
+            String respuesta = configuracionDao.editarMarcaConCategorias(
+                UsuarioLogeado.getUsuario(), marcaNombre, marcaEstadoNuevo, categoriasNombres);
 
             if (respuesta.equals("OK")) {
                 return ResponseEntity.ok(respuesta);

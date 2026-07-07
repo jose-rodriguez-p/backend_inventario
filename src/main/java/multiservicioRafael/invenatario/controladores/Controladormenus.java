@@ -3,7 +3,8 @@ package multiservicioRafael.invenatario.controladores;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import multiservicioRafael.invenatario.CodigoFuente.Sistema;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.RolMenuFachada;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.UsuarioLogeado;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,9 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/menus")
 public class Controladormenus {
 
+    private final RolMenuFachada rolMenuFachada = new RolMenuFachada();
+
     @PostMapping("/lista-menus")
     public ResponseEntity<ArrayList<String>> listamenus() {
-        ArrayList<String> menus = Sistema.getInstancia().listamenu();
+        ArrayList<String> menus = rolMenuFachada.listarMenu();
         return ResponseEntity.ok(menus != null ? menus : new ArrayList<>());
     }
 
@@ -39,11 +42,10 @@ public class Controladormenus {
             String usuarioLogueado = (String) payload.get("usuarioLogueado");
 
             if (usuarioLogueado != null && !usuarioLogueado.isBlank()) {
-                Sistema.getInstancia().setUsuarioLogueado(usuarioLogueado);
+                UsuarioLogeado.setUsuario(usuarioLogueado);
             }
 
-            boolean exito = Sistema.getInstancia()
-                    .actualizarRolYAccesos(nombre, estado, menus);
+            boolean exito = rolMenuFachada.actualizarRolYAccesos(nombre, estado, menus, UsuarioLogeado.getUsuario());
 
             if (exito) {
                 respuesta.put("mensaje", "El rol y sus accesos han sido actualizados con éxito.");

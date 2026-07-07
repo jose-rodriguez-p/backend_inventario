@@ -1,4 +1,4 @@
-package multiservicioRafael.invenatario.CodigoFuente.Fachadas;
+package multiservicioRafael.invenatario.CodigoFuente.ClasesFachda;
 
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.MenuDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.RolDao;
