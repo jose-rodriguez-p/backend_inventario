@@ -114,6 +114,31 @@ public class ControladorCliente {
         }
     }
 
+    @GetMapping("/verificar-placa/{placa}")
+    public ResponseEntity<?> verificarPlaca(@PathVariable String placa) {
+        try {
+            List<Map<String, Object>> clientes = clienteFachada.listarClientesConCarros();
+            for (Map<String, Object> c : clientes) {
+                List<Map<String, String>> carros = (List<Map<String, String>>) c.get("carros");
+                if (carros != null) {
+                    for (Map<String, String> carro : carros) {
+                        if (placa.equalsIgnoreCase(carro.get("placa"))) {
+                            return ResponseEntity.ok(Map.of(
+                                "existe", true,
+                                "cliente", c.get("nombre") + " " + c.get("apellido_paterno"),
+                                "dni", c.get("dni")
+                            ));
+                        }
+                    }
+                }
+            }
+            return ResponseEntity.ok(Map.of("existe", false));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/export/pdf")
     public ResponseEntity<byte[]> exportarPDF(@RequestBody List<Map<String, Object>> clientes) {
         try {
