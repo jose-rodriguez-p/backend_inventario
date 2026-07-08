@@ -83,9 +83,8 @@ public class MantenimientoDao {
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT o.id_orden_servicio, o.fecha_creacion, o.nombre_cliente, o.dni_cliente, ");
         sql.append("o.descripcion_vehiculo, o.precio_mano_obra, o.precio_total, ");
-        sql.append("COALESCE(e.nombre, 'Pendiente') AS estado ");
+        sql.append("CASE WHEN o.id_estado = 1 THEN 'Pendiente' WHEN o.id_estado = 2 THEN 'En Proceso' WHEN o.id_estado = 3 THEN 'Completado' ELSE 'Pendiente' END AS estado ");
         sql.append("FROM orden_servicio o ");
-        sql.append("LEFT JOIN estado_orden e ON o.id_estado = e.id_estado ");
         sql.append("WHERE 1=1 ");
 
         List<Object> params = new ArrayList<>();
@@ -127,8 +126,7 @@ public class MantenimientoDao {
 
     public int contarOrdenes(String busqueda) {
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT COUNT(*) FROM orden_servicio o ");
-        sql.append("LEFT JOIN estado_orden e ON o.id_estado = e.id_estado WHERE 1=1 ");
+        sql.append("SELECT COUNT(*) FROM orden_servicio o WHERE 1=1 ");
 
         List<Object> params = new ArrayList<>();
         if (busqueda != null && !busqueda.trim().isEmpty()) {
@@ -172,8 +170,7 @@ public class MantenimientoDao {
 
     public List<Map<String, Object>> listarTecnicos() {
         List<Map<String, Object>> lista = new ArrayList<>();
-        String sql = "SELECT t.id_trabajador, t.nombre, t.apellido_paterno, t.apellido_materno, t.cargo "
-                   + "FROM trabajador t WHERE t.estado = 'Activo' ORDER BY t.nombre";
+        String sql = "SELECT * FROM public.fn_listar_trabajadores_completo()";
         try (Connection cn = ConexionDB.getInstance().getConnection();
              PreparedStatement ps = cn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
