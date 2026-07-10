@@ -22,17 +22,17 @@ public class LoginDao implements LoginDaoInterface {
                         return null;
                     }
                     String trabajadorCompleto = rs.getString("trabajador_completo");
-                    String[] partes = trabajadorCompleto.split(", ");
                     String rolNombre = rs.getString("rol_nombre");
                     java.sql.Array arraySql = rs.getArray("lista_menues");
                     String[] menus = (arraySql != null) ? (String[]) arraySql.getArray() : new String[0];
                     String nombre = "";
                     String apellidoPat = "";
                     String apellidoMat = "";
-                    if (partes.length >= 3) {
-                        nombre = partes[0];
-                        apellidoPat = partes[1];
-                        apellidoMat = partes[2];
+                    if (trabajadorCompleto != null && !trabajadorCompleto.isBlank()) {
+                        String[] partes = trabajadorCompleto.split(",\\s*", -1);
+                        if (partes.length >= 1) nombre = partes[0].trim();
+                        if (partes.length >= 2) apellidoPat = partes[1].trim();
+                        if (partes.length >= 3) apellidoMat = partes[2].trim();
                         System.out.println("Nombre por separado: " + nombre);
                     }
                     return new Usuario(user, rolNombre, menus, nombre, apellidoMat, apellidoPat);
@@ -91,7 +91,7 @@ public class LoginDao implements LoginDaoInterface {
 
             try (ResultSet rs = cs.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getString(1); 
+                    return rs.getString(1);
                 }
             }
         } catch (Exception e) {
