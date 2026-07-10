@@ -3,7 +3,6 @@ package multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -81,7 +80,7 @@ public class MantenimientoDao {
         int offset = (pagina - 1) * porPagina;
 
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT o.id_orden_servicio, o.fecha_creacion, o.nombre_cliente, o.dni_cliente, ");
+        sql.append("SELECT o.id_orden_servicio, o.fecha_emision AS hora, o.nombre_cliente, o.dni_cliente, ");
         sql.append("o.descripcion_vehiculo, o.precio_mano_obra, o.precio_total, ");
         sql.append("CASE WHEN o.id_estado = 1 THEN 'Pendiente' WHEN o.id_estado = 2 THEN 'En Proceso' WHEN o.id_estado = 3 THEN 'Completado' ELSE 'Pendiente' END AS estado ");
         sql.append("FROM orden_servicio o ");
@@ -95,7 +94,7 @@ public class MantenimientoDao {
             params.add(like);
             params.add(like);
         }
-        sql.append("ORDER BY o.fecha_creacion DESC LIMIT ? OFFSET ?");
+        sql.append("ORDER BY o.id_orden_servicio DESC LIMIT ? OFFSET ?");
         params.add(porPagina);
         params.add(offset);
 
@@ -108,7 +107,7 @@ public class MantenimientoDao {
                 while (rs.next()) {
                     Map<String, Object> fila = new HashMap<>();
                     fila.put("idOrdenServicio", rs.getInt("id_orden_servicio"));
-                    fila.put("hora", rs.getString("fecha_creacion") != null ? rs.getString("fecha_creacion") : "");
+                    fila.put("hora", rs.getString("hora") != null ? rs.getString("hora") : "");
                     fila.put("cliente", rs.getString("nombre_cliente"));
                     fila.put("dniCliente", rs.getString("dni_cliente"));
                     fila.put("descripcionVehiculo", rs.getString("descripcion_vehiculo"));
@@ -170,7 +169,10 @@ public class MantenimientoDao {
 
     public List<Map<String, Object>> listarTecnicos() {
         List<Map<String, Object>> lista = new ArrayList<>();
-        String sql = "SELECT * FROM public.fn_listar_trabajadores_completo()";
+        String sql = "SELECT t.id_trabajador, f.nombre, f.apellido_paterno, f.apellido_materno, f.cargo "
+                   + "FROM public.fn_listar_trabajadores_completo() f "
+                   + "JOIN trabajador t ON t.nro_documento = f.nro_documento "
+                   + "WHERE t.estado = 'Activo' ORDER BY f.nombre";
         try (Connection cn = ConexionDB.getInstance().getConnection();
              PreparedStatement ps = cn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {

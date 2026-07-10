@@ -3,13 +3,13 @@ package multiservicioRafael.invenatario.controladores;
 import java.util.List;
 import java.util.Map;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Categoria;
-import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Servicio;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.CategoriaFachada;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.RolMenuFachada;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.AutenticacionFachada;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.ServicioFachada;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Marca;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.ConfiguracionDao;
-import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.ServicioDao;
+
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.UsuarioLogeado;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +23,7 @@ public class ControladorConfiguracion {
     private final RolMenuFachada rolMenuFachada = new RolMenuFachada();
     private final AutenticacionFachada autenticacionFachada = new AutenticacionFachada();
     private final ConfiguracionDao configuracionDao = new ConfiguracionDao();
-    private final ServicioDao servicioDao = new ServicioDao();
+    private final ServicioFachada servicioFachada = new ServicioFachada();
 
     @GetMapping("/roles/listar")
     public ResponseEntity<List<Map<String, Object>>> listarRoles() {
@@ -233,13 +233,21 @@ public class ControladorConfiguracion {
         }
     }
 
-    // ─── Servicios ─────────────────────────────────────────────────────────────
+    // ─── Servicios con Repuestos ───────────────────────────────────────────────
+
+    @GetMapping("/repuestos")
+    public ResponseEntity<?> listarRepuestosDisponibles() {
+        try {
+            return ResponseEntity.ok(servicioFachada.listarTodosRepuestos());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR_INTERNO");
+        }
+    }
 
     @GetMapping("/servicios")
     public ResponseEntity<?> listarServicios() {
         try {
-            List<Servicio> lista = servicioDao.listarServiciosCompleto();
-            return ResponseEntity.ok(lista);
+            return ResponseEntity.ok(servicioFachada.listarServiciosConRepuestos());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR_INTERNO");
         }
@@ -249,15 +257,15 @@ public class ControladorConfiguracion {
     public ResponseEntity<String> crearServicio(@RequestBody Map<String, Object> datos) {
         try {
             String nombre = (String) datos.get("nombre");
-            double precio = datos.get("precio") instanceof Number ? ((Number) datos.get("precio")).doubleValue() : 0;
             String estado = (String) datos.getOrDefault("estado", "Activo");
+            List<Map<String, Object>> repuestos = (List<Map<String, Object>>) datos.getOrDefault("repuestos", List.of());
 
-            if (nombre == null || nombre.trim().isEmpty() || precio <= 0) {
+            if (nombre == null || nombre.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("ERROR: Datos incompletos");
             }
 
-            String respuesta = servicioDao.crearServicio(
-                UsuarioLogeado.getUsuario(), nombre.trim(), precio, estado);
+            String respuesta = servicioFachada.crearServicio(
+                UsuarioLogeado.getUsuario(), nombre.trim(), estado, repuestos);
 
             if (respuesta.equals("OK")) return ResponseEntity.ok(respuesta);
             return ResponseEntity.badRequest().body(respuesta);
@@ -269,17 +277,17 @@ public class ControladorConfiguracion {
     @PutMapping("/servicios")
     public ResponseEntity<String> editarServicio(@RequestBody Map<String, Object> datos) {
         try {
-            String nombreOriginal = (String) datos.get("nombre_original");
+            int idServicio = ((Number) datos.get("id_servicio")).intValue();
             String nombre = (String) datos.get("nombre");
-            double precio = datos.get("precio") instanceof Number ? ((Number) datos.get("precio")).doubleValue() : 0;
             String estado = (String) datos.getOrDefault("estado", "Activo");
+            List<Map<String, Object>> repuestos = (List<Map<String, Object>>) datos.getOrDefault("repuestos", List.of());
 
-            if (nombreOriginal == null || nombre == null || nombre.trim().isEmpty()) {
+            if (nombre == null || nombre.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("ERROR: Datos incompletos");
             }
 
-            String respuesta = servicioDao.editarServicio(
-                UsuarioLogeado.getUsuario(), nombreOriginal, nombre.trim(), precio, estado);
+            String respuesta = servicioFachada.editarServicio(
+                UsuarioLogeado.getUsuario(), idServicio, nombre.trim(), estado, repuestos);
 
             if (respuesta.equals("OK")) return ResponseEntity.ok(respuesta);
             return ResponseEntity.badRequest().body(respuesta);
