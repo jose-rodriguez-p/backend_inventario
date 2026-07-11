@@ -26,6 +26,15 @@ public class ClienteFachada {
         return clienteDao.validarExisteCliente(dni);
     }
 
+    public Map<String, Object> buscarClienteConCarrosPorDni(String dni) {
+        try {
+            return clienteDao.buscarClienteConCarrosPorDni(dni);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public List<Map<String, Object>> listarClientesConCarros() {
         try {
             return clienteDao.listarClientesConCarros();

@@ -38,6 +38,58 @@ public class ClienteDao implements ClienteDaoInterfas {
         return false;
     }
 
+    public Map<String, Object> buscarClienteConCarrosPorDni(String dni) {
+        String sqlCliente = "SELECT dni, nombre, apellido_paterno, apellido_materno, celular, correo, estado "
+                + "FROM cliente WHERE dni = ?";
+        String sqlCarros = "SELECT placa, marca, modelo, anio FROM vehiculo WHERE dni_cliente = ?";
+
+        try (Connection conexion = ConexionDB.getInstance().getConnection()) {
+            Map<String, Object> cliente = null;
+
+            try (PreparedStatement ps = conexion.prepareStatement(sqlCliente)) {
+                ps.setString(1, dni);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        cliente = new HashMap<>();
+                        cliente.put("dni", rs.getString("dni"));
+                        cliente.put("nombre", rs.getString("nombre"));
+                        cliente.put("apellido_paterno", rs.getString("apellido_paterno"));
+                        cliente.put("apellido_materno", rs.getString("apellido_materno"));
+                        cliente.put("celular", rs.getString("celular"));
+                        cliente.put("correo", rs.getString("correo"));
+                        cliente.put("estado", rs.getString("estado"));
+                    }
+                }
+            }
+
+            if (cliente == null) {
+                return null;
+            }
+
+            List<Map<String, String>> carros = new ArrayList<>();
+            try (PreparedStatement ps2 = conexion.prepareStatement(sqlCarros)) {
+                ps2.setString(1, dni);
+                try (ResultSet rs2 = ps2.executeQuery()) {
+                    while (rs2.next()) {
+                        Map<String, String> carro = new HashMap<>();
+                        carro.put("placa", rs2.getString("placa"));
+                        carro.put("marca", rs2.getString("marca"));
+                        carro.put("modelo", rs2.getString("modelo"));
+                        carro.put("anio", rs2.getString("anio"));
+                        carros.add(carro);
+                    }
+                }
+            }
+            cliente.put("carros", carros);
+            return cliente;
+
+        } catch (Exception e) {
+            System.out.println("Error en buscarClienteConCarrosPorDni: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     @Override
     public List<Map<String, Object>> listarClientesConCarros() {
         List<Map<String, Object>> lista = new ArrayList<>();
