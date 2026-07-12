@@ -45,14 +45,7 @@ public class ControladorMantenimiento {
     @GetMapping("/buscar-cliente/{dni}")
     public ResponseEntity<?> buscarClientePorDni(@PathVariable String dni) {
         try {
-            List<Map<String, Object>> clientes = clienteFachada.listarClientesConCarros();
-            Map<String, Object> encontrado = null;
-            for (Map<String, Object> c : clientes) {
-                if (dni.equals(c.get("dni"))) {
-                    encontrado = c;
-                    break;
-                }
-            }
+            Map<String, Object> encontrado = clienteFachada.buscarClienteConCarrosPorDni(dni);
             if (encontrado != null) {
                 return ResponseEntity.ok(encontrado);
             } else {

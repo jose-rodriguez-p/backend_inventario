@@ -21,20 +21,30 @@ public class MantenimientoDao {
             cn = ConexionDB.getInstance().getConnection();
             cn.setAutoCommit(false);
 
+            int idCliente = 0;
+            String sqlFindCliente = "SELECT id_cliente FROM cliente WHERE dni = ? LIMIT 1";
+            try (PreparedStatement ps = cn.prepareStatement(sqlFindCliente)) {
+                ps.setString(1, dniCliente);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        idCliente = rs.getInt("id_cliente");
+                    } else {
+                        throw new Exception("Cliente con DNI " + dniCliente + " no encontrado");
+                    }
+                }
+            }
+
             String sqlOrden = "INSERT INTO orden_servicio "
-                + "(dni_cliente, nombre_cliente, descripcion_vehiculo, precio_mano_obra, precio_total, id_estado, nota, usuario_logueado) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id_orden_servicio";
+                + "(id_cliente, descripcion_vehiculo, hora, precio_mano_obra, precio_total, id_estado) "
+                + "VALUES (?, ?, CURRENT_TIME, ?, ?, ?) RETURNING id_orden_servicio";
 
             int idOrden;
             try (PreparedStatement ps = cn.prepareStatement(sqlOrden)) {
-                ps.setString(1, dniCliente);
-                ps.setString(2, nombreCliente);
-                ps.setString(3, descripcionVehiculo);
-                ps.setDouble(4, precioManoObra);
-                ps.setDouble(5, precioTotal);
-                ps.setInt(6, idEstado);
-                ps.setString(7, nota != null ? nota : "");
-                ps.setString(8, usuarioLogueado);
+                ps.setInt(1, idCliente);
+                ps.setString(2, descripcionVehiculo);
+                ps.setDouble(3, precioManoObra);
+                ps.setDouble(4, precioTotal);
+                ps.setInt(5, idEstado);
                 try (ResultSet rs = ps.executeQuery()) {
                     rs.next();
                     idOrden = rs.getInt(1);
@@ -80,15 +90,16 @@ public class MantenimientoDao {
         int offset = (pagina - 1) * porPagina;
 
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT o.id_orden_servicio, TO_CHAR(o.fecha_registro, 'HH24:MI') AS hora, o.nombre_cliente, o.dni_cliente, ");
+        sql.append("SELECT o.id_orden_servicio, o.hora, c.nombre, c.dni, ");
         sql.append("o.descripcion_vehiculo, o.precio_mano_obra, o.precio_total, ");
         sql.append("CASE WHEN o.id_estado = 1 THEN 'Pendiente' WHEN o.id_estado = 2 THEN 'En Proceso' WHEN o.id_estado = 3 THEN 'Completado' ELSE 'Pendiente' END AS estado ");
         sql.append("FROM orden_servicio o ");
+        sql.append("JOIN cliente c ON c.id_cliente = o.id_cliente ");
         sql.append("WHERE 1=1 ");
 
         List<Object> params = new ArrayList<>();
         if (busqueda != null && !busqueda.trim().isEmpty()) {
-            sql.append("AND (o.dni_cliente ILIKE ? OR o.nombre_cliente ILIKE ? OR o.descripcion_vehiculo ILIKE ?) ");
+            sql.append("AND (c.dni ILIKE ? OR c.nombre ILIKE ? OR o.descripcion_vehiculo ILIKE ?) ");
             String like = "%" + busqueda.trim() + "%";
             params.add(like);
             params.add(like);
@@ -108,8 +119,8 @@ public class MantenimientoDao {
                     Map<String, Object> fila = new HashMap<>();
                     fila.put("idOrdenServicio", rs.getInt("id_orden_servicio"));
                     fila.put("hora", rs.getString("hora") != null ? rs.getString("hora") : "");
-                    fila.put("cliente", rs.getString("nombre_cliente"));
-                    fila.put("dniCliente", rs.getString("dni_cliente"));
+                    fila.put("cliente", rs.getString("nombre"));
+                    fila.put("dniCliente", rs.getString("dni"));
                     fila.put("descripcionVehiculo", rs.getString("descripcion_vehiculo"));
                     fila.put("precioManoObra", rs.getDouble("precio_mano_obra"));
                     fila.put("precioTotal", rs.getDouble("precio_total"));
@@ -125,11 +136,11 @@ public class MantenimientoDao {
 
     public int contarOrdenes(String busqueda) {
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT COUNT(*) FROM orden_servicio o WHERE 1=1 ");
+        sql.append("SELECT COUNT(*) FROM orden_servicio o JOIN cliente c ON c.id_cliente = o.id_cliente WHERE 1=1 ");
 
         List<Object> params = new ArrayList<>();
         if (busqueda != null && !busqueda.trim().isEmpty()) {
-            sql.append("AND (o.dni_cliente ILIKE ? OR o.nombre_cliente ILIKE ? OR o.descripcion_vehiculo ILIKE ?) ");
+            sql.append("AND (c.dni ILIKE ? OR c.nombre ILIKE ? OR o.descripcion_vehiculo ILIKE ?) ");
             String like = "%" + busqueda.trim() + "%";
             params.add(like); params.add(like); params.add(like);
         }
