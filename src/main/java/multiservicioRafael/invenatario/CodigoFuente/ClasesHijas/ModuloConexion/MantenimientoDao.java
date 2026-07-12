@@ -80,7 +80,7 @@ public class MantenimientoDao {
         int offset = (pagina - 1) * porPagina;
 
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT o.id_orden_servicio, o.fecha_emision AS hora, o.nombre_cliente, o.dni_cliente, ");
+        sql.append("SELECT o.id_orden_servicio, TO_CHAR(o.fecha_registro, 'HH24:MI') AS hora, o.nombre_cliente, o.dni_cliente, ");
         sql.append("o.descripcion_vehiculo, o.precio_mano_obra, o.precio_total, ");
         sql.append("CASE WHEN o.id_estado = 1 THEN 'Pendiente' WHEN o.id_estado = 2 THEN 'En Proceso' WHEN o.id_estado = 3 THEN 'Completado' ELSE 'Pendiente' END AS estado ");
         sql.append("FROM orden_servicio o ");

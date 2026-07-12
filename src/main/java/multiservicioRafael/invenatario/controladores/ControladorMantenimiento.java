@@ -1,10 +1,9 @@
 package multiservicioRafael.invenatario.controladores;
 
 import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.ClienteFachada;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.ServicioFachada;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.MantenimientoDao;
-import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.ServicioDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.UsuarioLogeado;
-import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.Servicio;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,14 +17,14 @@ import org.springframework.http.HttpStatus;
 public class ControladorMantenimiento {
 
     private final ClienteFachada clienteFachada = new ClienteFachada();
-    private final ServicioDao servicioDao = new ServicioDao();
+    private final ServicioFachada servicioFachada = new ServicioFachada();
     private final MantenimientoDao mantenimientoDao = new MantenimientoDao();
 
     @GetMapping("/servicios")
     public ResponseEntity<?> listarServicios() {
         try {
-            List<Servicio> lista = servicioDao.listarServicios();
-            return ResponseEntity.ok(lista);
+            List<Map<String, Object>> lista = servicioFachada.listarServiciosConRepuestos();
+            return ResponseEntity.ok(lista != null ? lista : List.of());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Error interno: " + e.getMessage()));
