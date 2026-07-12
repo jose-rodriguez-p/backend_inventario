@@ -41,7 +41,8 @@ public class ClienteDao implements ClienteDaoInterfas {
     public Map<String, Object> buscarClienteConCarrosPorDni(String dni) {
         String sqlCliente = "SELECT dni, nombre, apellido_paterno, apellido_materno, celular, correo, estado "
                 + "FROM cliente WHERE dni = ?";
-        String sqlCarros = "SELECT placa, marca, modelo, anio FROM vehiculo WHERE dni_cliente = ?";
+        String sqlCarros = "SELECT ca.placa, ca.marca, ca.modelo, ca.anio FROM carro ca "
+                + "JOIN cliente cl ON cl.id_cliente = ca.id_cliente WHERE cl.dni = ?";
 
         try (Connection conexion = ConexionDB.getInstance().getConnection()) {
             Map<String, Object> cliente = null;
