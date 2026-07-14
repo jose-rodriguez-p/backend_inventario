@@ -133,4 +133,24 @@ public class ControladorMantenimiento {
                 .body(Map.of("error", "Error interno: " + e.getMessage()));
         }
     }
+
+    @PutMapping("/editar-estado")
+    public ResponseEntity<?> editarEstado(@RequestBody Map<String, Object> datos) {
+        try {
+            String usuarioNombre = (String) datos.get("usuario_logueado");
+            int idOrdenServicio = ((Number) datos.get("id_orden_servicio")).intValue();
+            String nuevoEstado = (String) datos.get("nuevo_estado");
+
+            Map<String, Object> resultado = mantenimientoDao.editarEstadoOrden(usuarioNombre, idOrdenServicio, nuevoEstado);
+
+            if ("OK".equals(resultado.get("status"))) {
+                return ResponseEntity.ok(resultado);
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultado);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error interno: " + e.getMessage()));
+        }
+    }
 }

@@ -21,30 +21,20 @@ public class MantenimientoDao {
             cn = ConexionDB.getInstance().getConnection();
             cn.setAutoCommit(false);
 
-            int idCliente = 0;
-            String sqlFindCliente = "SELECT id_cliente FROM cliente WHERE dni = ? LIMIT 1";
-            try (PreparedStatement ps = cn.prepareStatement(sqlFindCliente)) {
-                ps.setString(1, dniCliente);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        idCliente = rs.getInt("id_cliente");
-                    } else {
-                        throw new Exception("Cliente con DNI " + dniCliente + " no encontrado");
-                    }
-                }
-            }
-
             String sqlOrden = "INSERT INTO orden_servicio "
-                + "(id_cliente, descripcion_vehiculo, hora, precio_mano_obra, precio_total, id_estado) "
-                + "VALUES (?, ?, CURRENT_TIME, ?, ?, ?) RETURNING id_orden_servicio";
+                + "(dni_cliente, nombre_cliente, descripcion_vehiculo, precio_mano_obra, precio_total, id_estado, nota, usuario_logueado) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id_orden_servicio";
 
             int idOrden;
             try (PreparedStatement ps = cn.prepareStatement(sqlOrden)) {
-                ps.setInt(1, idCliente);
-                ps.setString(2, descripcionVehiculo);
-                ps.setDouble(3, precioManoObra);
-                ps.setDouble(4, precioTotal);
-                ps.setInt(5, idEstado);
+                ps.setString(1, dniCliente);
+                ps.setString(2, nombreCliente);
+                ps.setString(3, descripcionVehiculo);
+                ps.setDouble(4, precioManoObra);
+                ps.setDouble(5, precioTotal);
+                ps.setInt(6, idEstado);
+                ps.setString(7, nota != null ? nota : "");
+                ps.setString(8, usuarioLogueado);
                 try (ResultSet rs = ps.executeQuery()) {
                     rs.next();
                     idOrden = rs.getInt(1);
@@ -87,44 +77,32 @@ public class MantenimientoDao {
 
     public List<Map<String, Object>> listarOrdenes(String busqueda, int pagina, int porPagina) {
         List<Map<String, Object>> lista = new ArrayList<>();
-        int offset = (pagina - 1) * porPagina;
-
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT o.id_orden_servicio, o.hora, c.nombre, c.dni, ");
-        sql.append("o.descripcion_vehiculo, o.precio_mano_obra, o.precio_total, ");
-        sql.append("CASE WHEN o.id_estado = 1 THEN 'Pendiente' WHEN o.id_estado = 2 THEN 'En Proceso' WHEN o.id_estado = 3 THEN 'Completado' ELSE 'Pendiente' END AS estado ");
-        sql.append("FROM orden_servicio o ");
-        sql.append("JOIN cliente c ON c.id_cliente = o.id_cliente ");
-        sql.append("WHERE 1=1 ");
-
-        List<Object> params = new ArrayList<>();
-        if (busqueda != null && !busqueda.trim().isEmpty()) {
-            sql.append("AND (c.dni ILIKE ? OR c.nombre ILIKE ? OR o.descripcion_vehiculo ILIKE ?) ");
-            String like = "%" + busqueda.trim() + "%";
-            params.add(like);
-            params.add(like);
-            params.add(like);
-        }
-        sql.append("ORDER BY o.id_orden_servicio DESC LIMIT ? OFFSET ?");
-        params.add(porPagina);
-        params.add(offset);
+        String sql = "SELECT id_orden_servicio, hora::TEXT, fecha::TEXT, cliente, dni, vehiculo, "
+                   + "mano_obra, total, estado, tecnicos "
+                   + "FROM public.fn_listar_ordenes_mantenimiento(?) LIMIT ? OFFSET ?";
 
         try (Connection cn = ConexionDB.getInstance().getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, busqueda);
+            ps.setInt(2, porPagina);
+            ps.setInt(3, (pagina - 1) * porPagina);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> fila = new HashMap<>();
                     fila.put("idOrdenServicio", rs.getInt("id_orden_servicio"));
-                    fila.put("hora", rs.getString("hora") != null ? rs.getString("hora") : "");
-                    fila.put("cliente", rs.getString("nombre"));
+                    String horaRaw = rs.getString("hora");
+                    String fechaRaw = rs.getString("fecha");
+                    String hora = (horaRaw != null && horaRaw.length() >= 5) ? horaRaw.substring(0, 5) : "";
+                    String fecha = (fechaRaw != null && fechaRaw.length() >= 10) ? fechaRaw.substring(0, 10) : "";
+                    fila.put("hora", fecha + " " + hora);
+                    fila.put("fecha", fecha);
+                    fila.put("cliente", rs.getString("cliente"));
                     fila.put("dniCliente", rs.getString("dni"));
-                    fila.put("descripcionVehiculo", rs.getString("descripcion_vehiculo"));
-                    fila.put("precioManoObra", rs.getDouble("precio_mano_obra"));
-                    fila.put("precioTotal", rs.getDouble("precio_total"));
+                    fila.put("descripcionVehiculo", rs.getString("vehiculo"));
+                    fila.put("precioManoObra", rs.getDouble("mano_obra"));
+                    fila.put("precioTotal", rs.getDouble("total"));
                     fila.put("estado", rs.getString("estado"));
+                    fila.put("tecnicos", rs.getString("tecnicos"));
                     lista.add(fila);
                 }
             }
@@ -136,13 +114,16 @@ public class MantenimientoDao {
 
     public int contarOrdenes(String busqueda) {
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT COUNT(*) FROM orden_servicio o JOIN cliente c ON c.id_cliente = o.id_cliente WHERE 1=1 ");
+        sql.append("SELECT COUNT(*) FROM orden_servicio os ");
+        sql.append("JOIN cliente c ON c.id_cliente = os.id_cliente ");
+        sql.append("JOIN carro ca ON ca.id_carro = os.id_carro WHERE 1=1 ");
 
         List<Object> params = new ArrayList<>();
         if (busqueda != null && !busqueda.trim().isEmpty()) {
-            sql.append("AND (c.dni ILIKE ? OR c.nombre ILIKE ? OR o.descripcion_vehiculo ILIKE ?) ");
+            sql.append("AND (c.nombre ILIKE ? OR c.apellido_paterno ILIKE ? OR c.dni ILIKE ? ");
+            sql.append("OR ca.placa ILIKE ? OR os.id_orden_servicio::TEXT ILIKE ?) ");
             String like = "%" + busqueda.trim() + "%";
-            params.add(like); params.add(like); params.add(like);
+            for (int i = 0; i < 5; i++) params.add(like);
         }
 
         try (Connection cn = ConexionDB.getInstance().getConnection();
@@ -201,5 +182,34 @@ public class MantenimientoDao {
             System.out.println("Error listarTecnicos: " + e.getMessage());
         }
         return lista;
+    }
+
+    public Map<String, Object> editarEstadoOrden(String usuarioNombre, int idOrdenServicio, String nuevoEstado) {
+        Map<String, Object> resultado = new HashMap<>();
+        try (Connection cn = ConexionDB.getInstance().getConnection()) {
+            String sql = "SELECT public.fn_editar_estado_orden_mantenimiento(?, ?, ?)";
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setString(1, usuarioNombre);
+                ps.setInt(2, idOrdenServicio);
+                ps.setString(3, nuevoEstado);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String res = rs.getString(1);
+                        if (res != null && res.startsWith("OK")) {
+                            resultado.put("status", "OK");
+                            resultado.put("mensaje", res);
+                        } else {
+                            resultado.put("status", "ERROR");
+                            resultado.put("mensaje", res);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error editarEstadoOrden: " + e.getMessage());
+            resultado.put("status", "ERROR");
+            resultado.put("mensaje", e.getMessage());
+        }
+        return resultado;
     }
 }
