@@ -75,17 +75,13 @@ public class MantenimientoDao {
         return resultado;
     }
 
-    public List<Map<String, Object>> listarOrdenes(String busqueda, int pagina, int porPagina) {
+    public List<Map<String, Object>> listarOrdenes(String busqueda) {
         List<Map<String, Object>> lista = new ArrayList<>();
-        String sql = "SELECT id_orden_servicio, hora::TEXT, fecha::TEXT, cliente, dni, vehiculo, "
-                   + "mano_obra, total, estado, tecnicos "
-                   + "FROM public.fn_listar_ordenes_mantenimiento(?) LIMIT ? OFFSET ?";
+        String sql = "SELECT * FROM public.fn_listar_ordenes_mantenimiento(?)";
 
         try (Connection cn = ConexionDB.getInstance().getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, busqueda);
-            ps.setInt(2, porPagina);
-            ps.setInt(3, (pagina - 1) * porPagina);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> fila = new HashMap<>();
@@ -99,7 +95,7 @@ public class MantenimientoDao {
                     fila.put("cliente", rs.getString("cliente"));
                     fila.put("dniCliente", rs.getString("dni"));
                     fila.put("descripcionVehiculo", rs.getString("vehiculo"));
-                    fila.put("precioManoObra", rs.getDouble("mano_obra"));
+                    fila.put("servicios", rs.getString("servicios"));
                     fila.put("precioTotal", rs.getDouble("total"));
                     fila.put("estado", rs.getString("estado"));
                     fila.put("tecnicos", rs.getString("tecnicos"));
@@ -108,78 +104,6 @@ public class MantenimientoDao {
             }
         } catch (Exception e) {
             System.out.println("Error listarOrdenes: " + e.getMessage());
-        }
-        return lista;
-    }
-
-    public int contarOrdenes(String busqueda) {
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT COUNT(*) FROM orden_servicio os ");
-        sql.append("JOIN cliente c ON c.id_cliente = os.id_cliente ");
-        sql.append("JOIN carro ca ON ca.id_carro = os.id_carro WHERE 1=1 ");
-
-        List<Object> params = new ArrayList<>();
-        if (busqueda != null && !busqueda.trim().isEmpty()) {
-            sql.append("AND (c.nombre ILIKE ? OR c.apellido_paterno ILIKE ? OR c.dni ILIKE ? ");
-            sql.append("OR ca.placa ILIKE ? OR os.id_orden_servicio::TEXT ILIKE ?) ");
-            String like = "%" + busqueda.trim() + "%";
-            for (int i = 0; i < 5; i++) params.add(like);
-        }
-
-        try (Connection cn = ConexionDB.getInstance().getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt(1);
-            }
-        } catch (Exception e) {
-            System.out.println("Error contarOrdenes: " + e.getMessage());
-        }
-        return 0;
-    }
-
-    public Map<String, Object> obtenerResumen() {
-        Map<String, Object> resumen = new HashMap<>();
-        String sql = "SELECT COUNT(*) AS total, COALESCE(SUM(precio_total), 0) AS monto, "
-                   + "CASE WHEN COUNT(*) > 0 THEN COALESCE(SUM(precio_total), 0) / COUNT(*) ELSE 0 END AS promedio "
-                   + "FROM orden_servicio";
-        try (Connection cn = ConexionDB.getInstance().getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                resumen.put("totalOrdenes", rs.getInt("total"));
-                resumen.put("montoTotal", rs.getDouble("monto"));
-                resumen.put("ticketPromedio", rs.getDouble("promedio"));
-            }
-        } catch (Exception e) {
-            System.out.println("Error obtenerResumen: " + e.getMessage());
-        }
-        return resumen;
-    }
-
-    public List<Map<String, Object>> listarTecnicos() {
-        List<Map<String, Object>> lista = new ArrayList<>();
-        String sql = "SELECT t.id_trabajador, f.nombre, f.apellido_paterno, f.apellido_materno, f.cargo "
-                   + "FROM public.fn_listar_trabajadores_completo() f "
-                   + "JOIN trabajador t ON t.nro_documento = f.nro_documento "
-                   + "WHERE t.estado = 'Activo' ORDER BY f.nombre";
-        try (Connection cn = ConexionDB.getInstance().getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                Map<String, Object> fila = new HashMap<>();
-                fila.put("id_trabajador", rs.getInt("id_trabajador"));
-                String completo = rs.getString("nombre") + " "
-                    + rs.getString("apellido_paterno") + " "
-                    + (rs.getString("apellido_materno") != null ? rs.getString("apellido_materno") : "");
-                fila.put("nombre_completo", completo.trim());
-                fila.put("cargo", rs.getString("cargo") != null ? rs.getString("cargo") : "");
-                lista.add(fila);
-            }
-        } catch (Exception e) {
-            System.out.println("Error listarTecnicos: " + e.getMessage());
         }
         return lista;
     }

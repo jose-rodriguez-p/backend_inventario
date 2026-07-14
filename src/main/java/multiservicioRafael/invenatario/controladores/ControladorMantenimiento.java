@@ -1,12 +1,11 @@
 package multiservicioRafael.invenatario.controladores;
 
 import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.ClienteFachada;
+import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.MantenimientoFachada;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesFachda.ServicioFachada;
-import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.MantenimientoDao;
 import multiservicioRafael.invenatario.CodigoFuente.ClasesHijas.ModuloConexion.UsuarioLogeado;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +17,7 @@ public class ControladorMantenimiento {
 
     private final ClienteFachada clienteFachada = new ClienteFachada();
     private final ServicioFachada servicioFachada = new ServicioFachada();
-    private final MantenimientoDao mantenimientoDao = new MantenimientoDao();
+    private final MantenimientoFachada mantenimientoFachada = new MantenimientoFachada();
 
     @GetMapping("/servicios")
     public ResponseEntity<?> listarServicios() {
@@ -34,7 +33,7 @@ public class ControladorMantenimiento {
     @GetMapping("/tecnicos")
     public ResponseEntity<?> listarTecnicos() {
         try {
-            List<Map<String, Object>> lista = mantenimientoDao.listarTecnicos();
+            List<Map<String, Object>> lista = mantenimientoFachada.listarTecnicos();
             return ResponseEntity.ok(lista);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -83,7 +82,7 @@ public class ControladorMantenimiento {
                 nombreCliente += " " + cliente.get("apellido_materno");
             }
 
-            Map<String, Object> resultado = mantenimientoDao.registrarOrden(
+            Map<String, Object> resultado = mantenimientoFachada.registrarOrden(
                 dniCliente, nombreCliente.trim(), descripcionVehiculo,
                 precioManoObra, precioTotal, idEstado, nota,
                 UsuarioLogeado.getUsuario(), items);
@@ -105,8 +104,8 @@ public class ControladorMantenimiento {
             @RequestParam(defaultValue = "1") int pagina,
             @RequestParam(defaultValue = "10") int porPagina) {
         try {
-            List<Map<String, Object>> datos = mantenimientoDao.listarOrdenes(busqueda, pagina, porPagina);
-            int total = mantenimientoDao.contarOrdenes(busqueda);
+            List<Map<String, Object>> datos = mantenimientoFachada.listarOrdenes(busqueda, pagina, porPagina);
+            int total = mantenimientoFachada.contarOrdenes(busqueda);
             int totalPaginas = (int) Math.ceil((double) total / porPagina);
 
             Map<String, Object> respuesta = new HashMap<>();
@@ -126,7 +125,7 @@ public class ControladorMantenimiento {
     @GetMapping("/resumen")
     public ResponseEntity<?> obtenerResumen() {
         try {
-            Map<String, Object> resumen = mantenimientoDao.obtenerResumen();
+            Map<String, Object> resumen = mantenimientoFachada.obtenerResumen();
             return ResponseEntity.ok(resumen);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -141,7 +140,7 @@ public class ControladorMantenimiento {
             int idOrdenServicio = ((Number) datos.get("id_orden_servicio")).intValue();
             String nuevoEstado = (String) datos.get("nuevo_estado");
 
-            Map<String, Object> resultado = mantenimientoDao.editarEstadoOrden(usuarioNombre, idOrdenServicio, nuevoEstado);
+            Map<String, Object> resultado = mantenimientoFachada.editarEstadoOrden(usuarioNombre, idOrdenServicio, nuevoEstado);
 
             if ("OK".equals(resultado.get("status"))) {
                 return ResponseEntity.ok(resultado);
