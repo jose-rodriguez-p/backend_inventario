@@ -82,7 +82,6 @@ public class MantenimientoDao implements MantenimientoDaoInterface {
     public List<Map<String, Object>> listarOrdenes(String busqueda) {
         List<Map<String, Object>> lista = new ArrayList<>();
         String sql = "SELECT * FROM public.fn_listar_ordenes_mantenimiento(?)";
-
         try (Connection cn = ConexionDB.getInstance().getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, busqueda);
