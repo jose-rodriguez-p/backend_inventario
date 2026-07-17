@@ -20,41 +20,41 @@ public class MantenimientoDao implements MantenimientoDaoInterface {
 
     @Override
     public Map<String, Object> registrarOrden(
-            String dniCliente, String nombreCliente, String descripcionVehiculo,
-            double precioManoObra, double precioTotal, int idEstado, String nota,
-            String usuarioLogueado, List<Map<String, Object>> items) {
+            String dniCliente, String placa, String estado, String fecha,
+            String nota, double precioManoObra, String usuarioLogueado,
+            List<Map<String, Object>> items) {
 
         Map<String, Object> resultado = new HashMap<>();
         Connection cn = null;
-
         try {
             cn = ConexionDB.getInstance().getConnection();
-
             ObjectMapper mapper = new ObjectMapper();
             String jsonDetalle = mapper.writeValueAsString(items);
-            String sql = "{ ? = call public.fn_registrar_orden_mantenimiento(?, ?, ?, ?, ?, ?, ?::jsonb) }";
+
+            String sql = "{ ? = call public.fn_registrar_orden_mantenimiento(?, ?, ?, ?, ?::date, ?::text, ?::numeric, ?::jsonb) }";
 
             try (CallableStatement cs = cn.prepareCall(sql)) {
                 cs.registerOutParameter(1, Types.VARCHAR);
-                cs.setString(2, usuarioLogueado);                      
-                cs.setString(3, dniCliente);                           
-                cs.setString(4, descripcionVehiculo);                  
-                cs.setString(5, "Pendiente");                        
-                cs.setDate(6, new java.sql.Date(System.currentTimeMillis()));
-                cs.setString(7, nota);                                
-                cs.setString(8, jsonDetalle);                          
-                cs.execute();
-                String respuestaBD = cs.getString(1);
+                cs.setString(2, usuarioLogueado);
+                cs.setString(3, dniCliente);
+                cs.setString(4, placa);
+                cs.setString(5, estado);
+                cs.setString(6, fecha);
+                cs.setString(7, nota);
+                cs.setDouble(8, precioManoObra);
+                cs.setString(9, jsonDetalle);
 
+                cs.execute();
+
+                String respuestaBD = cs.getString(1);
                 if (respuestaBD != null && respuestaBD.startsWith("OK")) {
                     resultado.put("status", "OK");
                     resultado.put("mensaje", "Orden registrada correctamente.");
                 } else {
                     resultado.put("status", "ERROR");
-                    resultado.put("mensaje", respuestaBD); // Captura el mensaje descriptivo de tu función
+                    resultado.put("mensaje", respuestaBD);
                 }
             }
-
         } catch (Exception e) {
             System.out.println("Error registrarOrden: " + e.getMessage());
             resultado.put("status", "ERROR");
@@ -75,37 +75,33 @@ public class MantenimientoDao implements MantenimientoDaoInterface {
     public List<Map<String, Object>> listarOrdenes(String busqueda) {
         List<Map<String, Object>> lista = new ArrayList<>();
         String sql = "SELECT * FROM public.fn_listar_ordenes_mantenimiento(?)";
-
         try (Connection cn = ConexionDB.getInstance().getConnection(); PreparedStatement ps = cn.prepareStatement(sql)) {
-
             ps.setString(1, busqueda);
-
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> fila = new HashMap<>();
-
                     fila.put("idOrdenServicio", rs.getInt("id_orden_servicio"));
 
-                    // Formateo de fecha y hora
                     String horaRaw = rs.getString("hora");
                     String fechaRaw = rs.getString("fecha");
                     String hora = (horaRaw != null && horaRaw.length() >= 5) ? horaRaw.substring(0, 5) : "";
                     String fecha = (fechaRaw != null && fechaRaw.length() >= 10) ? fechaRaw.substring(0, 10) : "";
-
                     fila.put("hora", fecha + " " + hora);
                     fila.put("fecha", fecha);
+
                     fila.put("cliente", rs.getString("cliente"));
                     fila.put("dniCliente", rs.getString("dni"));
                     fila.put("descripcionVehiculo", rs.getString("vehiculo"));
+
+                    // NUEVO: costo de mano de obra
+                    fila.put("precioManoObra", rs.getDouble("mano_obra"));
+
                     fila.put("precioTotal", rs.getDouble("total"));
                     fila.put("estado", rs.getString("estado"));
                     fila.put("nota", rs.getString("nota"));
                     fila.put("usuarioRegistro", rs.getString("usuario_registro"));
 
-                    // 1. Leemos la columna JSON de la base de datos
                     String detalleJsonRaw = rs.getString("detalle");
-
-                    // 2. Convertimos usando tu dependencia "org.json"
                     Object detalleParsed = null;
                     List<String> serviciosList = new ArrayList<>();
                     List<String> tecnicosList = new ArrayList<>();
@@ -135,6 +131,7 @@ public class MantenimientoDao implements MantenimientoDaoInterface {
                     fila.put("servicios", String.join(", ", serviciosList));
                     fila.put("tecnicos", String.join(", ", tecnicosList));
                     fila.put("detalle", detalleParsed);
+
                     lista.add(fila);
                 }
             }

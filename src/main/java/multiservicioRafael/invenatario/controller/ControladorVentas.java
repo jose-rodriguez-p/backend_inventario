@@ -80,4 +80,32 @@ public class ControladorVentas {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of());
         }
     }
+
+    @PostMapping("/export/pdf")
+    public ResponseEntity<byte[]> exportarPDF(@RequestBody List<Map<String, Object>> ventas) {
+        try {
+            byte[] pdfBytes = ventasFachada.generarPDFBytesVentas(ventas);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "attachment; filename=reporte_ventas.pdf")
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
+    @PostMapping("/export/excel")
+    public ResponseEntity<byte[]> exportarExcel(@RequestBody List<Map<String, Object>> ventas) {
+        try {
+            byte[] excelBytes = ventasFachada.generarExcelBytesVentas(ventas);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    .header("Content-Disposition", "attachment; filename=reporte_ventas.xlsx")
+                    .body(excelBytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
 }

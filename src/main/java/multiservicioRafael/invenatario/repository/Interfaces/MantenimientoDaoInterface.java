@@ -6,9 +6,9 @@ import java.util.Map;
 public interface MantenimientoDaoInterface {
 
     Map<String, Object> registrarOrden(
-            String dniCliente, String nombreCliente, String descripcionVehiculo,
-            double precioManoObra, double precioTotal, int idEstado, String nota,
-            String usuarioLogueado, List<Map<String, Object>> items);
+            String dniCliente, String placa, String estado, String fecha,
+            String nota, double precioManoObra, String usuarioLogueado,
+            List<Map<String, Object>> items);
 
     List<Map<String, Object>> listarOrdenes(String busqueda);
 

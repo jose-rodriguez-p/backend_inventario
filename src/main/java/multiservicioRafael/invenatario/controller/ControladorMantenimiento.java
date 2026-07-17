@@ -26,7 +26,7 @@ public class ControladorMantenimiento {
             return ResponseEntity.ok(lista != null ? lista : List.of());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Error interno: " + e.getMessage()));
+                    .body(Map.of("error", "Error interno: " + e.getMessage()));
         }
     }
 
@@ -37,7 +37,7 @@ public class ControladorMantenimiento {
             return ResponseEntity.ok(lista);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Error interno: " + e.getMessage()));
+                    .body(Map.of("error", "Error interno: " + e.getMessage()));
         }
     }
 
@@ -49,11 +49,11 @@ public class ControladorMantenimiento {
                 return ResponseEntity.ok(encontrado);
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Cliente no encontrado"));
+                        .body(Map.of("error", "Cliente no encontrado"));
             }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Error interno: " + e.getMessage()));
+                    .body(Map.of("error", "Error interno: " + e.getMessage()));
         }
     }
 
@@ -61,40 +61,33 @@ public class ControladorMantenimiento {
     public ResponseEntity<?> registrarOrden(@RequestBody Map<String, Object> datos) {
         try {
             Map<String, Object> cliente = (Map<String, Object>) datos.get("cliente");
-            String descripcionVehiculo = (String) datos.get("descripcion_vehiculo");
-            double precioManoObra = ((Number) datos.getOrDefault("precio_mano_obra", 0)).doubleValue();
-            double precioTotal = ((Number) datos.getOrDefault("precio_total", 0)).doubleValue();
-            int idEstado = ((Number) datos.getOrDefault("id_estado", 1)).intValue();
+            String placa = (String) datos.get("placa");
+            String estado = (String) datos.getOrDefault("estado", "Pendiente");
+            String fecha = (String) datos.get("fecha");
             String nota = (String) datos.getOrDefault("nota", "");
+            double precioManoObra = ((Number) datos.getOrDefault("precio_mano_obra", 0)).doubleValue();
             List<Map<String, Object>> items = (List<Map<String, Object>>) datos.get("items");
 
             if (cliente == null || items == null || items.isEmpty()) {
                 return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Datos incompletos: cliente e items son obligatorios"));
+                        .body(Map.of("error", "Datos incompletos: cliente e items son obligatorios"));
             }
 
             String dniCliente = (String) cliente.get("dni");
-            String nombreCliente = (String) cliente.get("nombre");
-            if (cliente.get("apellido_paterno") != null) {
-                nombreCliente += " " + cliente.get("apellido_paterno");
-            }
-            if (cliente.get("apellido_materno") != null) {
-                nombreCliente += " " + cliente.get("apellido_materno");
-            }
 
             Map<String, Object> resultado = mantenimientoFachada.registrarOrden(
-                dniCliente, nombreCliente.trim(), descripcionVehiculo,
-                precioManoObra, precioTotal, idEstado, nota,
-                UsuarioLogeado.getUsuario(), items);
+                    dniCliente, placa, estado, fecha, nota, precioManoObra,
+                    UsuarioLogeado.getUsuario(), items);
 
             if ("OK".equals(resultado.get("status"))) {
                 return ResponseEntity.ok(resultado);
             } else {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultado);
             }
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Error interno: " + e.getMessage()));
+                    .body(Map.of("error", "Error interno: " + e.getMessage()));
         }
     }
 
@@ -118,7 +111,7 @@ public class ControladorMantenimiento {
             return ResponseEntity.ok(respuesta);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Error interno: " + e.getMessage()));
+                    .body(Map.of("error", "Error interno: " + e.getMessage()));
         }
     }
 
@@ -129,7 +122,7 @@ public class ControladorMantenimiento {
             return ResponseEntity.ok(resumen);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Error interno: " + e.getMessage()));
+                    .body(Map.of("error", "Error interno: " + e.getMessage()));
         }
     }
 
@@ -149,7 +142,35 @@ public class ControladorMantenimiento {
             }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Error interno: " + e.getMessage()));
+                    .body(Map.of("error", "Error interno: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/export/pdf")
+    public ResponseEntity<byte[]> exportarPDF(@RequestBody List<Map<String, Object>> ordenes) {
+        try {
+            byte[] pdfBytes = mantenimientoFachada.generarPDFBytesMantenimiento(ordenes);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "attachment; filename=reporte_mantenimiento.pdf")
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
+    @PostMapping("/export/excel")
+    public ResponseEntity<byte[]> exportarExcel(@RequestBody List<Map<String, Object>> ordenes) {
+        try {
+            byte[] excelBytes = mantenimientoFachada.generarExcelBytesMantenimiento(ordenes);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    .header("Content-Disposition", "attachment; filename=reporte_mantenimiento.xlsx")
+                    .body(excelBytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
         }
     }
 }
