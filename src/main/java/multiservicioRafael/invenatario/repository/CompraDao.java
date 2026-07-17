@@ -72,6 +72,50 @@ public class CompraDao implements CompraDaoInterface {
     }
 
     @Override
+    public List<Map<String, Object>> listarDetalleParaExport(List<Integer> idsOperCompra) {
+        List<Map<String, Object>> lista = new ArrayList<>();
+        if (idsOperCompra == null || idsOperCompra.isEmpty()) {
+            return lista;
+        }
+
+        String sql = "SELECT o.id_oper_compra, o.fec_compra, " +
+                "p.nombre_empresa AS nombre_proveedor, p.ruc AS ruc_proveedor, " +
+                "r.nombre AS nombre_repuesto, d.num_cantidad AS cantidad, d.precio_compra, " +
+                "(d.num_cantidad * d.precio_compra) AS subtotal " +
+                "FROM operacion_compra o " +
+                "JOIN det_compra_rep d ON d.id_oper_compra = o.id_oper_compra " +
+                "JOIN repuesto r ON r.id_repuesto = d.id_repuesto " +
+                "JOIN proveedor p ON p.id_proveedor = d.id_proveedor " +
+                "WHERE o.id_oper_compra = ANY(?) " +
+                "ORDER BY o.fec_compra DESC, o.id_oper_compra, r.nombre";
+
+        try (Connection conn = ConexionDB.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            Integer[] idsArray = idsOperCompra.toArray(new Integer[0]);
+            ps.setArray(1, conn.createArrayOf("integer", idsArray));
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> fila = new HashMap<>();
+                    fila.put("id_oper_compra", rs.getInt("id_oper_compra"));
+                    fila.put("fec_compra", rs.getTimestamp("fec_compra") != null ? rs.getTimestamp("fec_compra").toString() : "");
+                    fila.put("nombre_proveedor", rs.getString("nombre_proveedor"));
+                    fila.put("ruc_proveedor", rs.getString("ruc_proveedor"));
+                    fila.put("nombre_repuesto", rs.getString("nombre_repuesto"));
+                    fila.put("cantidad", rs.getInt("cantidad"));
+                    fila.put("precio_compra", rs.getBigDecimal("precio_compra"));
+                    fila.put("subtotal", rs.getBigDecimal("subtotal"));
+                    lista.add(fila);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+
+    @Override
     public String registrarCompra(String rucProveedor, List<Map<String, Object>> items, Connection conn) throws SQLException {
 
         int idProveedor = 0;
