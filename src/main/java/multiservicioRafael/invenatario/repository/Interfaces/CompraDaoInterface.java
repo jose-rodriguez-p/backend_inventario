@@ -11,5 +11,7 @@ public interface CompraDaoInterface {
 
     List<Map<String, Object>> obtenerDetalle(int idOperCompra);
 
+    List<Map<String, Object>> listarDetalleParaExport(List<Integer> idsOperCompra);
+
     String registrarCompra(String rucProveedor, List<Map<String, Object>> items, Connection conn) throws SQLException;
 }

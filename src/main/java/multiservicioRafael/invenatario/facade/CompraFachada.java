@@ -44,16 +44,31 @@ public class CompraFachada {
         }
     }
 
+    private List<Integer> extraerIds(List<Map<String, Object>> compras) {
+        List<Integer> ids = new java.util.ArrayList<>();
+        for (Map<String, Object> c : compras) {
+            Object idRaw = c.get("id_oper_compra");
+            if (idRaw instanceof Number) {
+                ids.add(((Number) idRaw).intValue());
+            }
+        }
+        return ids;
+    }
+
     public byte[] generarPDFBytesCompras(List<Map<String, Object>> compras) throws Exception {
-        String[] headers = {"Fecha", "Proveedor", "RUC", "Productos", "Total"};
-        String[] keys = {"fec_compra", "nombre_proveedor", "ruc_proveedor", "cantidad_items", "tot_pago"};
-        float[] pesos = {3f, 4f, 3f, 2f, 2.5f};
-        return exportador.generarPDF("Reporte de Compras", headers, keys, pesos, compras);
+        List<Integer> ids = extraerIds(compras);
+        List<Map<String, Object>> detalle = compraDao.listarDetalleParaExport(ids);
+        String[] headers = {"Fecha", "Proveedor", "RUC", "Producto", "Cantidad", "Precio Unit.", "Subtotal"};
+        String[] keys = {"fec_compra", "nombre_proveedor", "ruc_proveedor", "nombre_repuesto", "cantidad", "precio_compra", "subtotal"};
+        float[] pesos = {2.5f, 3f, 2f, 3.5f, 1.5f, 2f, 2f};
+        return exportador.generarPDF("Reporte de Compras", headers, keys, pesos, detalle);
     }
 
     public byte[] generarExcelBytesCompras(List<Map<String, Object>> compras) throws Exception {
-        String[] headers = {"FECHA", "PROVEEDOR", "RUC", "PRODUCTOS", "TOTAL"};
-        String[] keys = {"fec_compra", "nombre_proveedor", "ruc_proveedor", "cantidad_items", "tot_pago"};
-        return exportador.generarExcel("Reporte de Compras", headers, keys, compras);
+        List<Integer> ids = extraerIds(compras);
+        List<Map<String, Object>> detalle = compraDao.listarDetalleParaExport(ids);
+        String[] headers = {"FECHA", "PROVEEDOR", "RUC", "PRODUCTO", "CANTIDAD", "PRECIO UNIT.", "SUBTOTAL"};
+        String[] keys = {"fec_compra", "nombre_proveedor", "ruc_proveedor", "nombre_repuesto", "cantidad", "precio_compra", "subtotal"};
+        return exportador.generarExcel("Reporte de Compras", headers, keys, detalle);
     }
 }
