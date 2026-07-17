@@ -6,6 +6,7 @@ import multiservicioRafael.invenatario.facade.ServicioFachada;
 import multiservicioRafael.invenatario.repository.UsuarioLogeado;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -120,6 +121,47 @@ public class ControladorMantenimiento {
         try {
             Map<String, Object> resumen = mantenimientoFachada.obtenerResumen();
             return ResponseEntity.ok(resumen);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error interno: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/agregar-vehiculo")
+    public ResponseEntity<?> agregarVehiculo(@RequestBody Map<String, Object> datos) {
+        try {
+            String dni = (String) datos.get("dni");
+            String placa = (String) datos.get("placa");
+            String marca = (String) datos.get("marca");
+            String modelo = (String) datos.get("modelo");
+            String anio = (String) datos.get("anio");
+
+            Map<String, Object> clienteActual = clienteFachada.buscarClienteConCarrosPorDni(dni);
+            if (clienteActual == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Cliente no encontrado"));
+            }
+
+            List<Map<String, String>> carros = (List<Map<String, String>>) clienteActual.get("carros");
+            if (carros == null) carros = new ArrayList<>();
+
+            Map<String, String> nuevoCarro = new HashMap<>();
+            nuevoCarro.put("placa", placa);
+            nuevoCarro.put("marca", marca);
+            nuevoCarro.put("modelo", modelo);
+            nuevoCarro.put("anio", anio);
+            carros.add(nuevoCarro);
+
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("cliente", clienteActual);
+            payload.put("carros", carros);
+
+            String resultado = clienteFachada.editarCliente(payload, UsuarioLogeado.getUsuario());
+            if (resultado != null && resultado.startsWith("editado")) {
+                return ResponseEntity.ok(Map.of("status", "OK"));
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", resultado != null ? resultado : "Error desconocido"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error interno: " + e.getMessage()));
