@@ -33,21 +33,26 @@ public class DashboardDao implements DashboardDaoInterface {
         LocalDate prevDesde = desde.minusDays(dias);
         LocalDate prevHasta = desde.minusDays(1);
 
-        // Las gráficas de TENDENCIA mensual (Ventas vs Compras, Ventas vs
-        // Servicios, Ingresados vs Vendidos) no deben depender del filtro
-        // rápido (Hoy/Semana/Mes/Año) de las tarjetas de resumen: si el
-        // filtro cae dentro de un solo mes, solo hay un punto y no se ve
-        // ninguna línea. En su lugar, siempre muestran una ventana fija de
-        // los últimos 6 meses terminando en fechaHasta.
-        LocalDate mesesDesde = hasta.withDayOfMonth(1).minusMonths(5);
+        // Las gráficas de TENDENCIA (Ventas vs Compras, Ventas vs Servicios,
+        // Ingresados vs Vendidos) ahora sí respetan el rango seleccionado en
+        // los filtros (Hoy/Semana/Mes/Año/rango libre). Para que la línea no
+        // pierda sentido cuando el rango es muy corto o muy largo, la
+        // granularidad del agrupamiento se adapta automáticamente:
+        //  - <= 31 días  -> se agrupa por día
+        //  - <= 180 días -> se agrupa por semana
+        //  - resto       -> se agrupa por mes
+        // El frontend ya sabe leer "granularidadTendencia" para formatear
+        // las etiquetas del eje X (ver Dashboard.formatearEtiquetaPeriodo).
+        String granularidad = dias <= 31 ? "day" : dias <= 180 ? "week" : "month";
+        resultado.put("granularidadTendencia", granularidad);
 
         try (Connection cn = ConexionDB.getInstance().getConnection()) {
             cargarSeccion(resultado, "resumen", () -> obtenerResumen(cn, desde, hasta, prevDesde, prevHasta), new HashMap<>());
-            cargarSeccion(resultado, "ventasMensuales", () -> obtenerVentasMensuales(cn, mesesDesde, hasta), new ArrayList<>());
+            cargarSeccion(resultado, "ventasMensuales", () -> obtenerVentasMensuales(cn, desde, hasta, granularidad), new ArrayList<>());
             cargarSeccion(resultado, "stockPorCategoria", () -> obtenerStockPorCategoria(cn), new ArrayList<>());
             cargarSeccion(resultado, "ordenesPorEstado", () -> obtenerOrdenesPorEstado(cn, desde, hasta), new ArrayList<>());
-            cargarSeccion(resultado, "ventasVServicios", () -> obtenerVentasVServicios(cn, mesesDesde, hasta), new ArrayList<>());
-            cargarSeccion(resultado, "comparativoProductos", () -> obtenerComparativoProductos(cn, mesesDesde, hasta), new ArrayList<>());
+            cargarSeccion(resultado, "ventasVServicios", () -> obtenerVentasVServicios(cn, desde, hasta, granularidad), new ArrayList<>());
+            cargarSeccion(resultado, "comparativoProductos", () -> obtenerComparativoProductos(cn, desde, hasta, granularidad), new ArrayList<>());
             cargarSeccion(resultado, "topProductos", () -> obtenerTopProductos(cn, desde, hasta), new ArrayList<>());
             cargarSeccion(resultado, "topServicios", () -> obtenerTopServicios(cn, desde, hasta), new ArrayList<>());
             cargarSeccion(resultado, "topTrabajadores", () -> obtenerTopTrabajadores(cn, desde, hasta), new ArrayList<>());
@@ -123,32 +128,37 @@ public class DashboardDao implements DashboardDaoInterface {
         }
     }
 
-    private List<Map<String, Object>> obtenerVentasMensuales(Connection cn, LocalDate desde, LocalDate hasta) throws Exception {
-        Map<String, Double> ventasPorMes = new LinkedHashMap<>();
-        String sqlVentas = "SELECT date_trunc('month', fecha_emision)::date AS mes, SUM(precio_total) AS total " +
+    private List<Map<String, Object>> obtenerVentasMensuales(Connection cn, LocalDate desde, LocalDate hasta, String granularidad) throws Exception {
+        Map<String, Double> ventasPorPeriodo = new LinkedHashMap<>();
+        // granularidad viene siempre de un valor fijo calculado en el propio
+        // backend ("day"/"week"/"month"), nunca del usuario: es seguro
+        // concatenarlo directo en date_trunc().
+        String sqlVentas = "SELECT date_trunc('" + granularidad + "', fecha_emision)::date AS periodo, SUM(precio_total) AS total " +
                 "FROM orden_venta WHERE fecha_emision::date BETWEEN ? AND ? AND estado <> 'Anulado' GROUP BY 1";
         try (PreparedStatement ps = cn.prepareStatement(sqlVentas)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) ventasPorMes.put(rs.getDate("mes").toString(), rs.getDouble("total"));
+                while (rs.next()) ventasPorPeriodo.put(rs.getDate("periodo").toString(), rs.getDouble("total"));
             }
         }
 
         // Compras: se usa operacion_compra.tot_pago (el monto real pagado por
-        // cada operación de compra a proveedor), agrupado por mes de fec_compra.
-        Map<String, Double> comprasPorMes = new LinkedHashMap<>();
-        String sqlCompras = "SELECT date_trunc('month', fec_compra)::date AS mes, SUM(tot_pago) AS total " +
+        // cada operación de compra a proveedor), agrupado con la misma
+        // granularidad que las ventas para que ambas series calcen mes a mes,
+        // semana a semana o día a día.
+        Map<String, Double> comprasPorPeriodo = new LinkedHashMap<>();
+        String sqlCompras = "SELECT date_trunc('" + granularidad + "', fec_compra)::date AS periodo, SUM(tot_pago) AS total " +
                 "FROM operacion_compra WHERE fec_compra::date BETWEEN ? AND ? GROUP BY 1";
         try (PreparedStatement ps = cn.prepareStatement(sqlCompras)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) comprasPorMes.put(rs.getDate("mes").toString(), rs.getDouble("total"));
+                while (rs.next()) comprasPorPeriodo.put(rs.getDate("periodo").toString(), rs.getDouble("total"));
             }
         }
 
-        return combinarPorMes(desde, hasta, ventasPorMes, comprasPorMes, "ventas", "compras");
+        return combinarPorPeriodo(desde, hasta, ventasPorPeriodo, comprasPorPeriodo, "ventas", "compras", granularidad);
     }
 
     private List<Map<String, Object>> obtenerStockPorCategoria(Connection cn) throws Exception {
@@ -194,78 +204,105 @@ public class DashboardDao implements DashboardDaoInterface {
         return lista;
     }
 
-    private List<Map<String, Object>> obtenerVentasVServicios(Connection cn, LocalDate desde, LocalDate hasta) throws Exception {
-        Map<String, Double> ventasPorMes = new LinkedHashMap<>();
-        String sqlVentas = "SELECT date_trunc('month', fecha_emision)::date AS mes, SUM(precio_total) AS total " +
+    private List<Map<String, Object>> obtenerVentasVServicios(Connection cn, LocalDate desde, LocalDate hasta, String granularidad) throws Exception {
+        Map<String, Double> ventasPorPeriodo = new LinkedHashMap<>();
+        String sqlVentas = "SELECT date_trunc('" + granularidad + "', fecha_emision)::date AS periodo, SUM(precio_total) AS total " +
                 "FROM orden_venta WHERE fecha_emision::date BETWEEN ? AND ? AND estado <> 'Anulado' GROUP BY 1";
         try (PreparedStatement ps = cn.prepareStatement(sqlVentas)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) ventasPorMes.put(rs.getDate("mes").toString(), rs.getDouble("total"));
+                while (rs.next()) ventasPorPeriodo.put(rs.getDate("periodo").toString(), rs.getDouble("total"));
             }
         }
 
-        Map<String, Double> serviciosPorMes = new LinkedHashMap<>();
-        String sqlServicios = "SELECT date_trunc('month', fecha)::date AS mes, SUM(precio_total) AS total " +
+        Map<String, Double> serviciosPorPeriodo = new LinkedHashMap<>();
+        String sqlServicios = "SELECT date_trunc('" + granularidad + "', fecha)::date AS periodo, SUM(precio_total) AS total " +
                 "FROM orden_servicio WHERE fecha BETWEEN ? AND ? GROUP BY 1";
         try (PreparedStatement ps = cn.prepareStatement(sqlServicios)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) serviciosPorMes.put(rs.getDate("mes").toString(), rs.getDouble("total"));
+                while (rs.next()) serviciosPorPeriodo.put(rs.getDate("periodo").toString(), rs.getDouble("total"));
             }
         }
 
-        return combinarPorMes(desde, hasta, ventasPorMes, serviciosPorMes, "ventas", "servicios");
+        return combinarPorPeriodo(desde, hasta, ventasPorPeriodo, serviciosPorPeriodo, "ventas", "servicios", granularidad);
     }
 
-    private List<Map<String, Object>> obtenerComparativoProductos(Connection cn, LocalDate desde, LocalDate hasta) throws Exception {
-        Map<String, Double> ingresadosPorMes = new LinkedHashMap<>();
-        String sqlIngresados = "SELECT date_trunc('month', oc.fec_compra)::date AS mes, SUM(dc.num_cantidad) AS total " +
+    private List<Map<String, Object>> obtenerComparativoProductos(Connection cn, LocalDate desde, LocalDate hasta, String granularidad) throws Exception {
+        Map<String, Double> ingresadosPorPeriodo = new LinkedHashMap<>();
+        String sqlIngresados = "SELECT date_trunc('" + granularidad + "', oc.fec_compra)::date AS periodo, SUM(dc.num_cantidad) AS total " +
                 "FROM det_compra_rep dc JOIN operacion_compra oc ON oc.id_oper_compra = dc.id_oper_compra " +
                 "WHERE oc.fec_compra::date BETWEEN ? AND ? GROUP BY 1";
         try (PreparedStatement ps = cn.prepareStatement(sqlIngresados)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) ingresadosPorMes.put(rs.getDate("mes").toString(), rs.getDouble("total"));
+                while (rs.next()) ingresadosPorPeriodo.put(rs.getDate("periodo").toString(), rs.getDouble("total"));
             }
         }
 
-        Map<String, Double> vendidosPorMes = new LinkedHashMap<>();
-        String sqlVendidos = "SELECT date_trunc('month', ov.fecha_emision)::date AS mes, SUM(dv.cantidad) AS total " +
+        Map<String, Double> vendidosPorPeriodo = new LinkedHashMap<>();
+        String sqlVendidos = "SELECT date_trunc('" + granularidad + "', ov.fecha_emision)::date AS periodo, SUM(dv.cantidad) AS total " +
                 "FROM detalle_venta dv JOIN orden_venta ov ON ov.id_orden_venta = dv.id_orden_venta " +
                 "WHERE ov.fecha_emision::date BETWEEN ? AND ? AND ov.estado <> 'Anulado' GROUP BY 1";
         try (PreparedStatement ps = cn.prepareStatement(sqlVendidos)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) vendidosPorMes.put(rs.getDate("mes").toString(), rs.getDouble("total"));
+                while (rs.next()) vendidosPorPeriodo.put(rs.getDate("periodo").toString(), rs.getDouble("total"));
             }
         }
 
-        return combinarPorMes(desde, hasta, ingresadosPorMes, vendidosPorMes, "ingresados", "vendidos");
+        return combinarPorPeriodo(desde, hasta, ingresadosPorPeriodo, vendidosPorPeriodo, "ingresados", "vendidos", granularidad);
     }
 
-    // Arma la serie mes a mes (asegura que ambos lados tengan todos los
-    // meses del período, aunque uno de los dos no tenga datos ese mes).
-    private List<Map<String, Object>> combinarPorMes(LocalDate desde, LocalDate hasta,
-                                                     Map<String, Double> a, Map<String, Double> b, String claveA, String claveB) {
+    // Arma la serie período a período (día, semana o mes según granularidad),
+    // asegurando que ambos lados tengan todos los períodos del rango, aunque
+    // uno de los dos no tenga datos en alguno de ellos. La clave "mes" del
+    // mapa se mantiene con ese nombre por compatibilidad con el frontend
+    // (Dashboard.formatearEtiquetaPeriodo lee d.mes sin importar la
+    // granularidad real).
+    private List<Map<String, Object>> combinarPorPeriodo(LocalDate desde, LocalDate hasta,
+                                                         Map<String, Double> a, Map<String, Double> b, String claveA, String claveB, String granularidad) {
         List<Map<String, Object>> lista = new ArrayList<>();
-        YearMonth actual = YearMonth.from(desde);
-        YearMonth limite = YearMonth.from(hasta);
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-01");
-        while (!actual.isAfter(limite)) {
-            String clave = actual.atDay(1).format(fmt);
-            Map<String, Object> fila = new LinkedHashMap<>();
-            fila.put("mes", clave);
-            fila.put(claveA, a.getOrDefault(clave, 0.0));
-            fila.put(claveB, b.getOrDefault(clave, 0.0));
-            lista.add(fila);
-            actual = actual.plusMonths(1);
+        DateTimeFormatter fmtIso = DateTimeFormatter.ISO_LOCAL_DATE;
+
+        if ("day".equals(granularidad)) {
+            LocalDate actual = desde;
+            while (!actual.isAfter(hasta)) {
+                agregarPeriodo(lista, actual.format(fmtIso), a, b, claveA, claveB);
+                actual = actual.plusDays(1);
+            }
+        } else if ("week".equals(granularidad)) {
+            // Postgres date_trunc('week', ...) trunca al lunes de esa semana
+            // (ISO), así que alineamos la generación de claves al lunes para
+            // que ambas coincidan exactamente.
+            LocalDate actual = desde.with(java.time.DayOfWeek.MONDAY);
+            while (!actual.isAfter(hasta)) {
+                agregarPeriodo(lista, actual.format(fmtIso), a, b, claveA, claveB);
+                actual = actual.plusWeeks(1);
+            }
+        } else {
+            YearMonth actual = YearMonth.from(desde);
+            YearMonth limite = YearMonth.from(hasta);
+            DateTimeFormatter fmtMes = DateTimeFormatter.ofPattern("yyyy-MM-01");
+            while (!actual.isAfter(limite)) {
+                agregarPeriodo(lista, actual.atDay(1).format(fmtMes), a, b, claveA, claveB);
+                actual = actual.plusMonths(1);
+            }
         }
         return lista;
+    }
+
+    private void agregarPeriodo(List<Map<String, Object>> lista, String clave,
+                                Map<String, Double> a, Map<String, Double> b, String claveA, String claveB) {
+        Map<String, Object> fila = new LinkedHashMap<>();
+        fila.put("mes", clave);
+        fila.put(claveA, a.getOrDefault(clave, 0.0));
+        fila.put(claveB, b.getOrDefault(clave, 0.0));
+        lista.add(fila);
     }
 
     private List<Map<String, Object>> obtenerTopProductos(Connection cn, LocalDate desde, LocalDate hasta) throws Exception {
