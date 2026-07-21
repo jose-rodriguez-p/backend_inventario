@@ -501,7 +501,8 @@ public class ExportadorService {
         double totCajero = numero(r.get("tot_ventas_cajero"));
         double diferencia = totCajero - totSistema;
 
-        agregarLineaTotal(doc, "N° de ventas contabilizadas", String.valueOf(r.getOrDefault("cantidad_ventas", 0)), fTotalLabel, fValor);
+        agregarLineaTotal(doc, "N° de ventas", String.valueOf(r.getOrDefault("cantidad_ventas", 0)), fTotalLabel, fValor);
+        agregarLineaTotal(doc, "N° de mantenimientos", String.valueOf(r.getOrDefault("cantidad_mantenimientos", 0)), fTotalLabel, fValor);
         agregarLineaTotal(doc, "Total según sistema", "S/ " + formatoMoneda(totSistema), fTotalLabel, fTotalValor);
         agregarLineaTotal(doc, "Total contado (declarado por cajero)", "S/ " + formatoMoneda(totCajero), fTotalLabel, fTotalValor);
 
