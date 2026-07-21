@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package multiservicioRafael.invenatario.repository;
 
 import java.sql.Connection;
@@ -14,10 +10,6 @@ import java.util.Map;
 import multiservicioRafael.invenatario.config.ConexionDB;
 import multiservicioRafael.invenatario.repository.Interfaces.reporteVentaMantDaoInterfas;
 
-/**
- *
- * @author jose
- */
 public class reporteVentaMantDao implements reporteVentaMantDaoInterfas {
 
     @Override
@@ -32,18 +24,30 @@ public class reporteVentaMantDao implements reporteVentaMantDaoInterfas {
                 fila.put("nOrden", rs.getInt("n_orden"));
                 fila.put("tipo", rs.getString("tipo"));
 
-                String fechaRaw = rs.getString("fecha");
-                String hora = rs.getString("hora");
-                fila.put("fecha", (fechaRaw != null && fechaRaw.length() >= 10) ? fechaRaw.substring(0, 10) : "");
-                fila.put("hora", hora != null ? hora : "");
+                Object fRegistro = getValorSeguro(rs, "fecha_registro");
+                Object fCulminacion = getValorSeguro(rs, "fecha_culminacion");
+                Object fServicio = getValorSeguro(rs, "fecha_servicio");
+                Object fFecha = getValorSeguro(rs, "fecha");
 
-                fila.put("cliente", rs.getString("cliente"));
-                fila.put("dni", rs.getString("dni"));
-                fila.put("carro", rs.getString("carro"));
-                fila.put("repuesto", rs.getString("repuesto"));
-                fila.put("mecanico", rs.getString("mecanico"));
-                fila.put("vendedor", rs.getString("vendedor"));
-                fila.put("total", rs.getDouble("total"));
+                Object fechaBase = fCulminacion != null ? fCulminacion : (fRegistro != null ? fRegistro : (fFecha != null ? fFecha : fServicio));
+                String fechaRaw = fechaBase != null ? fechaBase.toString() : "";
+                String hora = String.valueOf(getValorSeguro(rs, "hora"));
+
+                fila.put("fechaRegistro", fRegistro != null ? fRegistro.toString() : fechaRaw);
+                fila.put("fechaCulminacion", fCulminacion != null ? fCulminacion.toString() : fechaRaw);
+                fila.put("fechaServicio", fServicio != null ? fServicio.toString() : "");
+                fila.put("fecha", (fechaRaw.length() >= 10) ? fechaRaw.substring(0, 10) : fechaRaw);
+                fila.put("hora", (hora != null && !"null".equals(hora)) ? hora : "");
+
+                fila.put("cliente", getValorSeguro(rs, "cliente"));
+                fila.put("dni", getValorSeguro(rs, "dni"));
+                fila.put("carro", getValorSeguro(rs, "carro"));
+                fila.put("repuesto", getValorSeguro(rs, "repuesto"));
+                fila.put("mecanico", getValorSeguro(rs, "mecanico"));
+                fila.put("vendedor", getValorSeguro(rs, "vendedor"));
+
+                Object totalVal = getValorSeguro(rs, "total");
+                fila.put("total", totalVal instanceof Number ? ((Number) totalVal).doubleValue() : 0.0);
 
                 lista.add(fila);
             }
@@ -55,4 +59,11 @@ public class reporteVentaMantDao implements reporteVentaMantDaoInterfas {
         return lista;
     }
 
+    private Object getValorSeguro(ResultSet rs, String colName) {
+        try {
+            return rs.getObject(colName);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }

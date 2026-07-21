@@ -76,40 +76,57 @@ public class MantenimientoDao implements MantenimientoDaoInterface {
         List<Map<String, Object>> lista = new ArrayList<>();
         String sql = "SELECT * FROM public.fn_listar_ordenes_mantenimiento(?)";
         try (Connection cn = ConexionDB.getInstance().getConnection(); PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setString(1, busqueda);
+            if (busqueda == null || busqueda.trim().isEmpty()) {
+                ps.setNull(1, java.sql.Types.VARCHAR);
+            } else {
+                ps.setString(1, busqueda.trim());
+            }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> fila = new HashMap<>();
-                    fila.put("idOrdenServicio", rs.getInt("id_orden_servicio"));
+                    fila.put("idOrdenServicio", getValorSeguro(rs, "id_orden_servicio"));
+                    fila.put("hora", String.valueOf(getValorSeguro(rs, "hora")));
 
-                    String horaRaw = rs.getString("hora");
-                    String fechaRaw = rs.getString("fecha");
-                    String hora = (horaRaw != null && horaRaw.length() >= 5) ? horaRaw.substring(0, 5) : "";
-                    String fecha = (fechaRaw != null && fechaRaw.length() >= 10) ? fechaRaw.substring(0, 10) : "";
-                    fila.put("hora", fecha + " " + hora);
-                    fila.put("fecha", fecha);
+                    Object fRegistro = getValorSeguro(rs, "fecha_registro");
+                    Object fServicio = getValorSeguro(rs, "fecha_servicio");
+                    Object fCulminacion = getValorSeguro(rs, "fecha_culminacion");
+                    Object fFecha = getValorSeguro(rs, "fecha");
 
-                    fila.put("cliente", rs.getString("cliente"));
-                    fila.put("dniCliente", rs.getString("dni"));
-                    fila.put("descripcionVehiculo", rs.getString("vehiculo"));
+                    fila.put("fechaRegistro", fRegistro != null ? fRegistro : fFecha);
+                    fila.put("fechaServicio", fServicio != null ? fServicio : fFecha);
+                    fila.put("fechaCulminacion", fCulminacion);
+                    fila.put("fecha", fFecha != null ? fFecha : (fServicio != null ? fServicio : fRegistro));
 
-                    // NUEVO: costo de mano de obra
-                    fila.put("precioManoObra", rs.getDouble("mano_obra"));
+                    fila.put("cliente", getValorSeguro(rs, "cliente"));
+                    fila.put("dniCliente", getValorSeguro(rs, "dni"));
+                    fila.put("descripcionVehiculo", getValorSeguro(rs, "vehiculo"));
 
-                    fila.put("precioTotal", rs.getDouble("total"));
-                    fila.put("estado", rs.getString("estado"));
-                    fila.put("nota", rs.getString("nota"));
-                    fila.put("usuarioRegistro", rs.getString("usuario_registro"));
+                    Object manoObraVal = getValorSeguro(rs, "mano_obra");
+                    fila.put("precioManoObra", manoObraVal instanceof Number ? ((Number) manoObraVal).doubleValue() : 0.0);
 
-                    String detalleJsonRaw = rs.getString("detalle");
+                    Object totalVal = getValorSeguro(rs, "total");
+                    fila.put("precioTotal", totalVal instanceof Number ? ((Number) totalVal).doubleValue() : 0.0);
+
+                    fila.put("estado", getValorSeguro(rs, "estado"));
+                    fila.put("nota", getValorSeguro(rs, "nota"));
+                    fila.put("usuarioRegistro", getValorSeguro(rs, "usuario_registro"));
+
+                    Object detalleVal = getValorSeguro(rs, "detalle");
+                    String detalleJsonRaw = detalleVal != null ? detalleVal.toString() : null;
                     Object detalleParsed = null;
                     List<String> serviciosList = new ArrayList<>();
                     List<String> tecnicosList = new ArrayList<>();
+
+                    Object tecnicosRaw = getValorSeguro(rs, "tecnicos");
+                    if (tecnicosRaw != null && !tecnicosRaw.toString().isEmpty()) {
+                        tecnicosList.add(tecnicosRaw.toString());
+                    }
 
                     if (detalleJsonRaw != null && !detalleJsonRaw.isEmpty()) {
                         try {
                             JSONArray arr = new JSONArray(detalleJsonRaw);
                             detalleParsed = arr.toList();
+                            System.out.println("Detalle parsed: " + detalleParsed);
                             for (int i = 0; i < arr.length(); i++) {
                                 Object sv = arr.getJSONObject(i).opt("nombre_servicio");
                                 if (sv != null) {
@@ -120,11 +137,15 @@ public class MantenimientoDao implements MantenimientoDaoInterface {
                                     tecnicosList.add(tw.toString());
                                 }
                             }
+                            System.out.println("Servicios list: " + serviciosList);
+                            System.out.println("Tecnicos list: " + tecnicosList);
                         } catch (Exception jsonEx) {
                             System.out.println("Error parseando detalle JSON: " + jsonEx.getMessage());
+                            jsonEx.printStackTrace();
                             detalleParsed = new ArrayList<>();
                         }
                     } else {
+                        System.out.println("Detalle JSON is null or empty");
                         detalleParsed = new ArrayList<>();
                     }
 
@@ -169,5 +190,13 @@ public class MantenimientoDao implements MantenimientoDaoInterface {
             resultado.put("mensaje", e.getMessage());
         }
         return resultado;
+    }
+
+    private Object getValorSeguro(ResultSet rs, String colName) {
+        try {
+            return rs.getObject(colName);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

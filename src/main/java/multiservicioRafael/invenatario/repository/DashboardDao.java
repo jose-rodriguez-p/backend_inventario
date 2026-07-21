@@ -118,7 +118,7 @@ public class DashboardDao implements DashboardDaoInterface {
     }
 
     private int contarOrdenesServicio(Connection cn, LocalDate desde, LocalDate hasta) throws Exception {
-        String sql = "SELECT COUNT(*) FROM orden_servicio WHERE fecha BETWEEN ? AND ?";
+        String sql = "SELECT COUNT(*) FROM orden_servicio WHERE COALESCE(fecha_servicio, fecha_registro::date) BETWEEN ? AND ?";
         try (PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
@@ -188,7 +188,7 @@ public class DashboardDao implements DashboardDaoInterface {
         // esa tabla no está relacionada) — se agrupa tal cual.
         String sql = "SELECT os.estado AS estado, COUNT(*) AS total " +
                 "FROM orden_servicio os " +
-                "WHERE os.fecha BETWEEN ? AND ? GROUP BY os.estado ORDER BY os.estado";
+                "WHERE COALESCE(os.fecha_servicio, os.fecha_registro::date) BETWEEN ? AND ? GROUP BY os.estado ORDER BY os.estado";
         try (PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
@@ -217,8 +217,8 @@ public class DashboardDao implements DashboardDaoInterface {
         }
 
         Map<String, Double> serviciosPorPeriodo = new LinkedHashMap<>();
-        String sqlServicios = "SELECT date_trunc('" + granularidad + "', fecha)::date AS periodo, SUM(precio_total) AS total " +
-                "FROM orden_servicio WHERE fecha BETWEEN ? AND ? GROUP BY 1";
+        String sqlServicios = "SELECT date_trunc('" + granularidad + "', COALESCE(fecha_servicio, fecha_registro::date))::date AS periodo, SUM(precio_total) AS total " +
+                "FROM orden_servicio WHERE COALESCE(fecha_servicio, fecha_registro::date) BETWEEN ? AND ? GROUP BY 1";
         try (PreparedStatement ps = cn.prepareStatement(sqlServicios)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
@@ -334,7 +334,7 @@ public class DashboardDao implements DashboardDaoInterface {
                 "FROM detalle_orden_servicio dos " +
                 "JOIN orden_servicio os ON os.id_orden_servicio = dos.id_orden_servicio " +
                 "JOIN servicio sv ON sv.id_servicio = dos.id_servicio " +
-                "WHERE os.fecha BETWEEN ? AND ? " +
+                "WHERE COALESCE(os.fecha_servicio, os.fecha_registro::date) BETWEEN ? AND ? " +
                 "GROUP BY sv.nombre ORDER BY total DESC LIMIT 5";
         try (PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setObject(1, desde);
@@ -357,7 +357,7 @@ public class DashboardDao implements DashboardDaoInterface {
                 "FROM detalle_orden_servicio dos " +
                 "JOIN orden_servicio os ON os.id_orden_servicio = dos.id_orden_servicio " +
                 "JOIN trabajador tr ON tr.id_trabajador = dos.id_trabajador " +
-                "WHERE os.fecha BETWEEN ? AND ? " +
+                "WHERE COALESCE(os.fecha_servicio, os.fecha_registro::date) BETWEEN ? AND ? " +
                 "GROUP BY tr.nombre, tr.apellido_paterno ORDER BY total DESC LIMIT 5";
         try (PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setObject(1, desde);
