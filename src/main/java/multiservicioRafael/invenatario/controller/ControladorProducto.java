@@ -1,0 +1,153 @@
+package multiservicioRafael.invenatario.controller;
+
+import multiservicioRafael.invenatario.facade.ProductoFachada;
+import multiservicioRafael.invenatario.facade.CategoriaFachada;
+import multiservicioRafael.invenatario.repository.UsuarioLogeado;
+import multiservicioRafael.invenatario.modal.Categoria;
+import multiservicioRafael.invenatario.modal.Producto;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+
+@RestController
+@RequestMapping("/api/productos")
+public class ControladorProducto {
+
+    private final ProductoFachada productoFachada = new ProductoFachada();
+    private final CategoriaFachada categoriaFachada = new CategoriaFachada();
+
+    @GetMapping("/listar")
+    public ResponseEntity<List<Producto>> listarProductos() {
+        return ResponseEntity.ok(
+                productoFachada.obtenerListaProductos()
+        );
+    }
+
+    @GetMapping("/categorias")
+    public ResponseEntity<?> listarCategorias() {
+        List<Categoria> categorias = categoriaFachada.listarCategoria();
+        if (categorias == null || categorias.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("LISTA_VACIA");
+        }
+        List<String> nombres = categorias.stream()
+                .map(Categoria::getNombre)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(nombres);
+    }
+
+    @GetMapping("/categorias-marcas")
+    public ResponseEntity<?> listarCategoriasConMarcas() {
+        try {
+            List<Map<String, Object>> lista = productoFachada.listarCategoriasConMarcas();
+            if (lista == null || lista.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body("LISTA_VACIA");
+            }
+            return ResponseEntity.ok(lista);
+        } catch (Exception e) {
+            System.out.println("Error en controlador listarCategoriasConMarcas: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR_INTERNO");
+        }
+    }
+
+    @GetMapping("/listar-repuestos")
+    public ResponseEntity<?> listarRepuestos() {
+        try {
+            List<Map<String, Object>> lista = productoFachada.listarRepuestos();
+            if (lista == null || lista.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body("LISTA_VACIA");
+            }
+            return ResponseEntity.ok(lista);
+        } catch (Exception e) {
+            System.out.println("Error en controlador listarRepuestos: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR_INTERNO");
+        }
+    }
+
+    @PutMapping("/editar-repuesto")
+    public ResponseEntity<String> editarRepuesto(@RequestBody Map<String, Object> datos) {
+        try {
+            String nombre = (String) datos.get("nombre_repuesto");
+            String categoriaNombre = (String) datos.get("nombre_categoria");
+            String marcaNombre = (String) datos.get("nombre_marca");
+            String proveedorNombre = (String) datos.get("nombre_proveedor");
+            int cantidad = ((Number) datos.get("cantidad")).intValue();
+            java.math.BigDecimal precioCompra = new java.math.BigDecimal(datos.get("precio_compra").toString());
+            java.math.BigDecimal precioVenta = new java.math.BigDecimal(datos.get("precio_venta").toString());
+            int stockMinimo = ((Number) datos.get("stock_minimo")).intValue();
+            String estado = (String) datos.get("estado");
+
+            String respuesta = productoFachada.editarRepuesto(
+                nombre, categoriaNombre, marcaNombre, proveedorNombre,
+                cantidad, precioCompra, precioVenta, stockMinimo, estado,
+                UsuarioLogeado.getUsuario()
+            );
+
+            if (respuesta.equals("OK")) {
+                return ResponseEntity.ok("REPUESTO_ACTUALIZADO");
+            } else {
+                return ResponseEntity.badRequest().body(respuesta);
+            }
+        } catch (Exception e) {
+            System.out.println("Error en controlador editarRepuesto: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR_INTERNO");
+        }
+    }
+
+    @PostMapping("/agregar-repuesto")
+    public ResponseEntity<String> agregarRepuesto(@RequestBody Map<String, Object> datos) {
+        try {
+            String nombre = (String) datos.get("nombre");
+            String categoriaNombre = (String) datos.get("nombre_categoria");
+            String marcaNombre = (String) datos.get("marca");
+            String proveedorNombre = (String) datos.get("nombre_proveedor");
+            int cantidad = ((Number) datos.get("cantidad")).intValue();
+            java.math.BigDecimal precioCompra = new java.math.BigDecimal(datos.get("precio_compra").toString());
+            java.math.BigDecimal precioVenta = new java.math.BigDecimal(datos.get("precio_venta").toString());
+            int stockMinimo = ((Number) datos.get("stock_minimo")).intValue();
+            String estado = (String) datos.get("estado");
+
+            String respuesta = productoFachada.agregarRepuesto(
+                nombre, categoriaNombre, marcaNombre, proveedorNombre,
+                cantidad, precioCompra, precioVenta, stockMinimo, estado,
+                UsuarioLogeado.getUsuario()
+            );
+
+            if (respuesta.equals("OK")) {
+                return ResponseEntity.ok("REPUESTO_REGISTRADO");
+            } else {
+                return ResponseEntity.badRequest().body(respuesta);
+            }
+        } catch (Exception e) {
+            System.out.println("Error en controlador agregarRepuesto: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR_INTERNO");
+        }
+    }
+
+    @PostMapping("/export/pdf")
+    public ResponseEntity<byte[]> exportarPDF(@RequestBody List<Map<String, Object>> repuestos) {
+        try {
+            // TODO: Implementar exportación PDF en ProductoFachada
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        } catch (Exception e) {
+            System.out.println("Error al exportar PDF: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/export/excel")
+    public ResponseEntity<byte[]> exportarExcel(@RequestBody List<Map<String, Object>> repuestos) {
+        try {
+            // TODO: Implementar exportación Excel en ProductoFachada
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        } catch (Exception e) {
+            System.out.println("Error al exportar Excel: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+}
