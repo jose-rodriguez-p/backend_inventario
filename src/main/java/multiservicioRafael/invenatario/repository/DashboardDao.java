@@ -32,10 +32,14 @@ public class DashboardDao implements DashboardDaoInterface {
         long dias = java.time.temporal.ChronoUnit.DAYS.between(desde, hasta) + 1;
         LocalDate prevDesde = desde.minusDays(dias);
         LocalDate prevHasta = desde.minusDays(1);
-        
-        String granularidad = dias <= 31 ? "day" : dias <= 180 ? "week" : "month";
+
+        // Cuando el rango filtrado es un único día (filtro "Hoy"), agrupar
+        // por día deja 1 solo punto (o 2, si "desde" y "hasta" difieren en
+        // 1 día) y la gráfica se ve como puntos sueltos. El profesor pidió
+        // que en ese caso se desglose por hora en vez de por día.
+        String granularidad = dias <= 1 ? "hour" : dias <= 31 ? "day" : dias <= 180 ? "week" : "month";
         resultado.put("granularidadTendencia", granularidad);
-        
+
         try (Connection cn = ConexionDB.getInstance().getConnection()) {
             cargarSeccion(resultado, "resumen", () -> obtenerResumen(cn, desde, hasta, prevDesde, prevHasta), new HashMap<>());
             cargarSeccion(resultado, "ventasMensuales", () -> obtenerVentasMensuales(cn, desde, hasta, granularidad), new ArrayList<>());
@@ -118,33 +122,42 @@ public class DashboardDao implements DashboardDaoInterface {
         }
     }
 
+    // Arma la expresión SQL que trunca una columna de fecha/timestamp según
+    // la granularidad decidida por el backend, siempre devuelta como texto
+    // (to_char) en vez de castear a ::date: con granularidad "hour" un
+    // ::date habría descartado la hora y colapsado todo el día en 1 fila.
+    // granularidad viene siempre de un valor fijo calculado en el propio
+    // backend ("hour"/"day"/"week"/"month"), nunca del usuario: es seguro
+    // concatenarlo directo en el SQL.
+    private String periodoSelect(String columnaExpr, String granularidad) {
+        String formato = "hour".equals(granularidad) ? "YYYY-MM-DD HH24:00:00" : "YYYY-MM-DD";
+        return "to_char(date_trunc('" + granularidad + "', " + columnaExpr + "), '" + formato + "')";
+    }
+
     private List<Map<String, Object>> obtenerVentasMensuales(Connection cn, LocalDate desde, LocalDate hasta, String granularidad) throws Exception {
         Map<String, Double> ventasPorPeriodo = new LinkedHashMap<>();
-        // granularidad viene siempre de un valor fijo calculado en el propio
-        // backend ("day"/"week"/"month"), nunca del usuario: es seguro
-        // concatenarlo directo en date_trunc().
-        String sqlVentas = "SELECT date_trunc('" + granularidad + "', fecha_emision)::date AS periodo, SUM(precio_total) AS total " +
+        String sqlVentas = "SELECT " + periodoSelect("fecha_emision", granularidad) + " AS periodo, SUM(precio_total) AS total " +
                 "FROM orden_venta WHERE fecha_emision::date BETWEEN ? AND ? AND estado <> 'Anulado' GROUP BY 1";
         try (PreparedStatement ps = cn.prepareStatement(sqlVentas)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) ventasPorPeriodo.put(rs.getDate("periodo").toString(), rs.getDouble("total"));
+                while (rs.next()) ventasPorPeriodo.put(rs.getString("periodo"), rs.getDouble("total"));
             }
         }
 
         // Compras: se usa operacion_compra.tot_pago (el monto real pagado por
         // cada operación de compra a proveedor), agrupado con la misma
         // granularidad que las ventas para que ambas series calcen mes a mes,
-        // semana a semana o día a día.
+        // semana a semana, día a día u hora a hora.
         Map<String, Double> comprasPorPeriodo = new LinkedHashMap<>();
-        String sqlCompras = "SELECT date_trunc('" + granularidad + "', fec_compra)::date AS periodo, SUM(tot_pago) AS total " +
+        String sqlCompras = "SELECT " + periodoSelect("fec_compra", granularidad) + " AS periodo, SUM(tot_pago) AS total " +
                 "FROM operacion_compra WHERE fec_compra::date BETWEEN ? AND ? GROUP BY 1";
         try (PreparedStatement ps = cn.prepareStatement(sqlCompras)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) comprasPorPeriodo.put(rs.getDate("periodo").toString(), rs.getDouble("total"));
+                while (rs.next()) comprasPorPeriodo.put(rs.getString("periodo"), rs.getDouble("total"));
             }
         }
 
@@ -196,24 +209,31 @@ public class DashboardDao implements DashboardDaoInterface {
 
     private List<Map<String, Object>> obtenerVentasVServicios(Connection cn, LocalDate desde, LocalDate hasta, String granularidad) throws Exception {
         Map<String, Double> ventasPorPeriodo = new LinkedHashMap<>();
-        String sqlVentas = "SELECT date_trunc('" + granularidad + "', fecha_emision)::date AS periodo, SUM(precio_total) AS total " +
+        String sqlVentas = "SELECT " + periodoSelect("fecha_emision", granularidad) + " AS periodo, SUM(precio_total) AS total " +
                 "FROM orden_venta WHERE fecha_emision::date BETWEEN ? AND ? AND estado <> 'Anulado' GROUP BY 1";
         try (PreparedStatement ps = cn.prepareStatement(sqlVentas)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) ventasPorPeriodo.put(rs.getDate("periodo").toString(), rs.getDouble("total"));
+                while (rs.next()) ventasPorPeriodo.put(rs.getString("periodo"), rs.getDouble("total"));
             }
         }
 
+        // orden_servicio no tiene columna de hora confiable para agrupar por
+        // hora (solo "hora" de la cita), así que para granularidad "hour" se
+        // usa fecha_registro (timestamp) cuando fecha_servicio es nulo, igual
+        // que el resto del archivo ya hace vía COALESCE.
         Map<String, Double> serviciosPorPeriodo = new LinkedHashMap<>();
-        String sqlServicios = "SELECT date_trunc('" + granularidad + "', COALESCE(fecha_servicio, fecha_registro::date))::date AS periodo, SUM(precio_total) AS total " +
+        String columnaServicio = "hour".equals(granularidad)
+                ? "COALESCE(fecha_registro, fecha_servicio::timestamp)"
+                : "COALESCE(fecha_servicio, fecha_registro::date)";
+        String sqlServicios = "SELECT " + periodoSelect(columnaServicio, granularidad) + " AS periodo, SUM(precio_total) AS total " +
                 "FROM orden_servicio WHERE COALESCE(fecha_servicio, fecha_registro::date) BETWEEN ? AND ? GROUP BY 1";
         try (PreparedStatement ps = cn.prepareStatement(sqlServicios)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) serviciosPorPeriodo.put(rs.getDate("periodo").toString(), rs.getDouble("total"));
+                while (rs.next()) serviciosPorPeriodo.put(rs.getString("periodo"), rs.getDouble("total"));
             }
         }
 
@@ -222,38 +242,50 @@ public class DashboardDao implements DashboardDaoInterface {
 
     private List<Map<String, Object>> obtenerComparativoProductos(Connection cn, LocalDate desde, LocalDate hasta, String granularidad) throws Exception {
         Map<String, Double> ingresadosPorPeriodo = new LinkedHashMap<>();
-        String sqlIngresados = "SELECT date_trunc('" + granularidad + "', oc.fec_compra)::date AS periodo, SUM(dc.num_cantidad) AS total " +
+        String sqlIngresados = "SELECT " + periodoSelect("oc.fec_compra", granularidad) + " AS periodo, SUM(dc.num_cantidad) AS total " +
                 "FROM det_compra_rep dc JOIN operacion_compra oc ON oc.id_oper_compra = dc.id_oper_compra " +
                 "WHERE oc.fec_compra::date BETWEEN ? AND ? GROUP BY 1";
         try (PreparedStatement ps = cn.prepareStatement(sqlIngresados)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) ingresadosPorPeriodo.put(rs.getDate("periodo").toString(), rs.getDouble("total"));
+                while (rs.next()) ingresadosPorPeriodo.put(rs.getString("periodo"), rs.getDouble("total"));
             }
         }
 
         Map<String, Double> vendidosPorPeriodo = new LinkedHashMap<>();
-        String sqlVendidos = "SELECT date_trunc('" + granularidad + "', ov.fecha_emision)::date AS periodo, SUM(dv.cantidad) AS total " +
+        String sqlVendidos = "SELECT " + periodoSelect("ov.fecha_emision", granularidad) + " AS periodo, SUM(dv.cantidad) AS total " +
                 "FROM detalle_venta dv JOIN orden_venta ov ON ov.id_orden_venta = dv.id_orden_venta " +
                 "WHERE ov.fecha_emision::date BETWEEN ? AND ? AND ov.estado <> 'Anulado' GROUP BY 1";
         try (PreparedStatement ps = cn.prepareStatement(sqlVendidos)) {
             ps.setObject(1, desde);
             ps.setObject(2, hasta);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) vendidosPorPeriodo.put(rs.getDate("periodo").toString(), rs.getDouble("total"));
+                while (rs.next()) vendidosPorPeriodo.put(rs.getString("periodo"), rs.getDouble("total"));
             }
         }
 
         return combinarPorPeriodo(desde, hasta, ingresadosPorPeriodo, vendidosPorPeriodo, "ingresados", "vendidos", granularidad);
     }
-    
+
     private List<Map<String, Object>> combinarPorPeriodo(LocalDate desde, LocalDate hasta,
                                                          Map<String, Double> a, Map<String, Double> b, String claveA, String claveB, String granularidad) {
         List<Map<String, Object>> lista = new ArrayList<>();
         DateTimeFormatter fmtIso = DateTimeFormatter.ISO_LOCAL_DATE;
 
-        if ("day".equals(granularidad)) {
+        if ("hour".equals(granularidad)) {
+            // El rango para "hour" siempre es 1 solo día (ver decisión de
+            // granularidad más arriba), así que se generan las 24 horas de
+            // "desde" para que la gráfica tenga sus 24 puntos aunque no haya
+            // datos en algunas horas (en vez de aparecer solo 1-2 puntos).
+            DateTimeFormatter fmtHora = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:00:00");
+            java.time.LocalDateTime actual = desde.atStartOfDay();
+            java.time.LocalDateTime limite = hasta.atTime(23, 0);
+            while (!actual.isAfter(limite)) {
+                agregarPeriodo(lista, actual.format(fmtHora), a, b, claveA, claveB);
+                actual = actual.plusHours(1);
+            }
+        } else if ("day".equals(granularidad)) {
             LocalDate actual = desde;
             while (!actual.isAfter(hasta)) {
                 agregarPeriodo(lista, actual.format(fmtIso), a, b, claveA, claveB);
