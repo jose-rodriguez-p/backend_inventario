@@ -288,6 +288,153 @@ public class ExportadorService {
     }
 
     // ----------------------------------------------------------------------
+    // Comprobante de Servicio de Mantenimiento
+    // ----------------------------------------------------------------------
+    public byte[] generarComprobanteMantenimientoPDF(Map<String, Object> m) throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Document doc = new Document(com.lowagie.text.PageSize.A5, 30, 30, 30, 30);
+        PdfWriter.getInstance(doc, out);
+        doc.open();
+
+        java.awt.Color rojoGuinda = new java.awt.Color(166, 43, 50);
+        java.awt.Color grisOscuro = new java.awt.Color(30, 34, 41);
+        java.awt.Color grisTexto = new java.awt.Color(90, 95, 105);
+        java.awt.Color grisBorde = new java.awt.Color(220, 225, 230);
+        Font fEmpresa = new Font(Font.HELVETICA, 18, Font.BOLD, rojoGuinda);
+        Font fEtiqueta = new Font(Font.HELVETICA, 9, Font.NORMAL, grisTexto);
+        Font fValor = new Font(Font.HELVETICA, 10, Font.BOLD, grisOscuro);
+        Font fComprobante = new Font(Font.HELVETICA, 12, Font.BOLD, java.awt.Color.WHITE);
+        Font fHeaderTabla = new Font(Font.HELVETICA, 9, Font.BOLD, java.awt.Color.WHITE);
+        Font fCelda = new Font(Font.HELVETICA, 9, Font.NORMAL, new java.awt.Color(50, 50, 50));
+        Font fTotalLabel = new Font(Font.HELVETICA, 10, Font.NORMAL, grisTexto);
+        Font fTotalValor = new Font(Font.HELVETICA, 14, Font.BOLD, rojoGuinda);
+
+        doc.add(new Paragraph("MULTISERVICIOS RAFAEL", fEmpresa));
+        doc.add(new Paragraph("Servicio de Mantenimiento y Taller Automotriz", fEtiqueta));
+        doc.add(new Paragraph(" "));
+
+        String tipo = String.valueOf(m.getOrDefault("tipoComprobante", m.getOrDefault("tipo_comprobante", "Boleta")));
+        String serie = String.valueOf(m.getOrDefault("serie", tipo.equalsIgnoreCase("Factura") ? "F001" : "B001"));
+        String idOrden = String.valueOf(m.getOrDefault("idOrdenServicio", m.getOrDefault("id_orden_servicio", "-")));
+        String numero = serie + " - N° " + idOrden;
+
+        PdfPTable cabecera = new PdfPTable(1);
+        cabecera.setWidthPercentage(100);
+        PdfPCell cellCab = new PdfPCell(new Paragraph((tipo.equalsIgnoreCase("Factura") ? "FACTURA ELECTRÓNICA" : "BOLETA DE VENTA ELECTRÓNICA") + "\n" + numero, fComprobante));
+        cellCab.setBackgroundColor(grisOscuro);
+        cellCab.setPadding(10);
+        cellCab.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cabecera.addCell(cellCab);
+        doc.add(cabecera);
+        doc.add(new Paragraph(" "));
+
+        agregarLineaDato(doc, "Cliente", String.valueOf(m.getOrDefault("cliente", "-")), fEtiqueta, fValor);
+        agregarLineaDato(doc, "DNI / Documento", String.valueOf(m.getOrDefault("dniCliente", m.getOrDefault("dni", "-"))), fEtiqueta, fValor);
+        agregarLineaDato(doc, "Vehículo", String.valueOf(m.getOrDefault("descripcionVehiculo", m.getOrDefault("vehiculo", "-"))), fEtiqueta, fValor);
+        agregarLineaDato(doc, "Técnicos", String.valueOf(m.getOrDefault("tecnicos", "-")), fEtiqueta, fValor);
+        agregarLineaDato(doc, "Fecha de servicio", String.valueOf(m.getOrDefault("fechaServicio", m.getOrDefault("fechaCulminacion", "-"))), fEtiqueta, fValor);
+        agregarLineaDato(doc, "Método de pago", String.valueOf(m.getOrDefault("metodoPago", m.getOrDefault("metodo_pago", "Efectivo"))), fEtiqueta, fValor);
+        doc.add(new Paragraph(" "));
+
+        String[] headers = {"Descripción / Detalle", "Cant.", "Subtotal"};
+        float[] pesos = {5.3f, 1.2f, 2f};
+        PdfPTable tabla = new PdfPTable(headers.length);
+        tabla.setWidthPercentage(100);
+        tabla.setWidths(pesos);
+        for (String h : headers) {
+            PdfPCell ch = new PdfPCell(new Paragraph(h, fHeaderTabla));
+            ch.setBackgroundColor(rojoGuinda);
+            ch.setPadding(6);
+            ch.setHorizontalAlignment(Element.ALIGN_CENTER);
+            tabla.addCell(ch);
+        }
+
+        Object detalleObj = m.get("detalle");
+        if (detalleObj instanceof List) {
+            List<?> list = (List<?>) detalleObj;
+            for (Object itemObj : list) {
+                if (itemObj instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> item = (Map<String, Object>) itemObj;
+                    Object nomObj = item.get("nombre_servicio");
+                    if (nomObj == null) nomObj = item.get("servicio");
+                    if (nomObj == null) nomObj = item.get("descripcion");
+                    String nom = nomObj != null ? String.valueOf(nomObj) : "Servicio";
+
+                    Object cantObj = item.get("cantidad");
+                    int cantVal = 1;
+                    if (cantObj instanceof Number) {
+                        cantVal = ((Number) cantObj).intValue();
+                    } else if (cantObj != null) {
+                        try {
+                            cantVal = Integer.parseInt(cantObj.toString());
+                        } catch (Exception ignored) {}
+                    }
+
+                    Object subObj = item.get("precio_subtotal");
+                    if (subObj == null) subObj = item.get("subtotal");
+                    if (subObj == null) subObj = item.get("precio");
+                    double subVal = numero(subObj);
+
+                    StringBuilder descBuilder = new StringBuilder(nom);
+                    Object repsObj = item.get("repuestos");
+                    if (repsObj instanceof List) {
+                        List<?> reps = (List<?>) repsObj;
+                        for (Object repObj : reps) {
+                            if (repObj instanceof Map) {
+                                Map<?, ?> rep = (Map<?, ?>) repObj;
+                                Object rName = rep.get("nombre_repuesto");
+                                Object rCant = rep.get("cantidad");
+                                Object rPrice = rep.get("precio_total");
+                                if (rPrice == null) rPrice = rep.get("precio_unitario");
+                                if (rName != null) {
+                                    descBuilder.append("\n  • Repuesto: ").append(rName);
+                                    if (rCant != null) descBuilder.append(" x").append(rCant);
+                                    if (rPrice != null) descBuilder.append(" (S/ ").append(formatoMoneda(numero(rPrice))).append(")");
+                                }
+                            }
+                        }
+                    }
+
+                    tabla.addCell(celdaSimple(descBuilder.toString(), fCelda, Element.ALIGN_LEFT, grisBorde));
+                    tabla.addCell(celdaSimple(String.valueOf(cantVal), fCelda, Element.ALIGN_CENTER, grisBorde));
+                    tabla.addCell(celdaSimple(formatoMoneda(subVal), fCelda, Element.ALIGN_RIGHT, grisBorde));
+                }
+            }
+        }
+        doc.add(tabla);
+        doc.add(new Paragraph(" "));
+
+        double manoObra = numero(m.getOrDefault("precioManoObra", m.getOrDefault("mano_obra", 0)));
+        double totalVal = numero(m.getOrDefault("precioTotal", m.getOrDefault("total", 0)));
+        double valorVenta = totalVal > 0 ? totalVal / 1.18 : 0;
+        double igv = totalVal - valorVenta;
+
+        if (manoObra > 0) {
+            agregarLineaTotal(doc, "Mano de obra", "S/ " + formatoMoneda(manoObra), fTotalLabel, fValor);
+        }
+        agregarLineaTotal(doc, "Valor de venta (sin IGV)", "S/ " + formatoMoneda(valorVenta), fTotalLabel, fValor);
+        agregarLineaTotal(doc, "IGV (18%)", "S/ " + formatoMoneda(igv), fTotalLabel, fValor);
+        Paragraph total = new Paragraph("TOTAL A PAGAR:  S/ " + formatoMoneda(totalVal), fTotalValor);
+        total.setAlignment(Element.ALIGN_RIGHT);
+        doc.add(total);
+
+        String nota = m.get("nota") != null ? String.valueOf(m.get("nota")) : "";
+        if (!nota.isBlank()) {
+            doc.add(new Paragraph(" "));
+            doc.add(new Paragraph("Nota: " + nota, fEtiqueta));
+        }
+
+        doc.add(new Paragraph(" "));
+        Paragraph pie = new Paragraph("Gracias por su preferencia — Multiservicios Rafael", fEtiqueta);
+        pie.setAlignment(Element.ALIGN_CENTER);
+        doc.add(pie);
+
+        doc.close();
+        return out.toByteArray();
+    }
+
+    // ----------------------------------------------------------------------
     // Comprobante / resumen de cierre de caja (cuadre de caja)
     // ----------------------------------------------------------------------
     @SuppressWarnings("unchecked")

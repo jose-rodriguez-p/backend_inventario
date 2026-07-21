@@ -188,6 +188,38 @@ public class ControladorMantenimiento {
         }
     }
 
+    @GetMapping("/{id}/comprobante")
+    public ResponseEntity<byte[]> comprobante(
+            @PathVariable("id") int idOrdenServicio,
+            @RequestParam(value = "tipoComprobante", required = false) String tipoComprobante,
+            @RequestParam(value = "metodoPago", required = false) String metodoPago) {
+        try {
+            Map<String, Object> comprobante = mantenimientoFachada.obtenerComprobanteMantenimiento(idOrdenServicio);
+            if (comprobante.get("idOrdenServicio") == null && comprobante.get("id_orden_servicio") == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (tipoComprobante != null && !tipoComprobante.isBlank()) {
+                comprobante.put("tipoComprobante", tipoComprobante);
+                if (tipoComprobante.equalsIgnoreCase("Factura")) {
+                    comprobante.put("serie", "F001");
+                } else {
+                    comprobante.put("serie", "B001");
+                }
+            }
+            if (metodoPago != null && !metodoPago.isBlank()) {
+                comprobante.put("metodoPago", metodoPago);
+            }
+            byte[] pdf = mantenimientoFachada.generarComprobanteMantenimientoPDF(comprobante);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "inline; filename=comprobante_mantenimiento_" + idOrdenServicio + ".pdf")
+                    .body(pdf);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
     @PostMapping("/export/pdf")
     public ResponseEntity<byte[]> exportarPDF(@RequestBody List<Map<String, Object>> ordenes) {
         try {

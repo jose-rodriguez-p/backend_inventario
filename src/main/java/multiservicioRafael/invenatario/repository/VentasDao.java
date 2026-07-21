@@ -203,7 +203,7 @@ public class VentasDao implements VentasDaoInterface {
                 "c.dni, c.nombre AS cliente_nombre, c.apellido_paterno AS cliente_ap, c.apellido_materno AS cliente_am, " +
                 "t.nombre AS vendedor_nombre, t.apellido_paterno AS vendedor_ap " +
                 "FROM public.orden_venta ov " +
-                "JOIN public.cliente c ON c.id_cliente = ov.id_cliente " +
+                "LEFT JOIN public.cliente c ON c.id_cliente = ov.id_cliente " +
                 "LEFT JOIN public.usuario u ON u.id_usuario = ov.id_usuario " +
                 "LEFT JOIN public.trabajador t ON t.id_trabajador = u.id_trabajador " +
                 "WHERE ov.id_orden_venta = ?";
@@ -221,7 +221,8 @@ public class VentasDao implements VentasDaoInterface {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         comprobante.put("id_orden_venta", rs.getInt("id_orden_venta"));
-                        comprobante.put("fecha_emision", rs.getTimestamp("fecha_emision").toString());
+                        java.sql.Timestamp ts = rs.getTimestamp("fecha_emision");
+                        comprobante.put("fecha_emision", ts != null ? ts.toString() : "-");
                         comprobante.put("tipo_comprobante", rs.getString("tipo_comprobante"));
                         comprobante.put("serie", rs.getString("serie"));
                         comprobante.put("correlativo", rs.getString("correlativo"));
@@ -233,11 +234,12 @@ public class VentasDao implements VentasDaoInterface {
                         comprobante.put("precio_total", rs.getDouble("precio_total"));
                         comprobante.put("tipo_descuento", rs.getString("tipo_descuento"));
                         comprobante.put("nota", rs.getString("nota"));
-                        comprobante.put("dni", rs.getString("dni"));
-                        String cliente = (rs.getString("cliente_nombre") + " " +
-                                (rs.getString("cliente_ap") != null ? rs.getString("cliente_ap") : "") + " " +
-                                (rs.getString("cliente_am") != null ? rs.getString("cliente_am") : "")).trim();
-                        comprobante.put("cliente", cliente);
+                        comprobante.put("dni", rs.getString("dni") != null ? rs.getString("dni") : "-");
+                        String cliNom = rs.getString("cliente_nombre") != null ? rs.getString("cliente_nombre") : "";
+                        String cliAp = rs.getString("cliente_ap") != null ? rs.getString("cliente_ap") : "";
+                        String cliAm = rs.getString("cliente_am") != null ? rs.getString("cliente_am") : "";
+                        String cliente = (cliNom + " " + cliAp + " " + cliAm).trim();
+                        comprobante.put("cliente", cliente.isEmpty() ? "Cliente General" : cliente);
                         String vendedor = ((rs.getString("vendedor_nombre") != null ? rs.getString("vendedor_nombre") : "") + " " +
                                 (rs.getString("vendedor_ap") != null ? rs.getString("vendedor_ap") : "")).trim();
                         comprobante.put("vendedor", vendedor.isEmpty() ? "-" : vendedor);

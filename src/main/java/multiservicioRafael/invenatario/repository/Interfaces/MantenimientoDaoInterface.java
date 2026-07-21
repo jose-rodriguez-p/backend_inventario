@@ -12,5 +12,7 @@ public interface MantenimientoDaoInterface {
 
     List<Map<String, Object>> listarOrdenes(String busqueda);
 
+    Map<String, Object> obtenerComprobanteMantenimiento(int idOrdenServicio);
+
     Map<String, Object> editarEstadoOrden(String usuarioNombre, int idOrdenServicio, String nuevoEstado);
 }

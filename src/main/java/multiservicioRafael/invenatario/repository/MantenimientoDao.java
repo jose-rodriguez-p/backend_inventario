@@ -192,6 +192,21 @@ public class MantenimientoDao implements MantenimientoDaoInterface {
         return resultado;
     }
 
+    @Override
+    public Map<String, Object> obtenerComprobanteMantenimiento(int idOrdenServicio) {
+        List<Map<String, Object>> lista = listarOrdenes(String.valueOf(idOrdenServicio));
+        for (Map<String, Object> orden : lista) {
+            Object idVal = orden.get("idOrdenServicio");
+            if (idVal != null && Integer.parseInt(idVal.toString()) == idOrdenServicio) {
+                return orden;
+            }
+        }
+        if (!lista.isEmpty()) {
+            return lista.get(0);
+        }
+        return new HashMap<>();
+    }
+
     private Object getValorSeguro(ResultSet rs, String colName) {
         try {
             return rs.getObject(colName);

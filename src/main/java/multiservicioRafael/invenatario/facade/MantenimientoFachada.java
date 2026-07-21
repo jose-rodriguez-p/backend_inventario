@@ -92,6 +92,14 @@ public class MantenimientoFachada {
         return mantenimientoDao.editarEstadoOrden(usuarioNombre, idOrdenServicio, nuevoEstado);
     }
 
+    public Map<String, Object> obtenerComprobanteMantenimiento(int idOrdenServicio) {
+        return mantenimientoDao.obtenerComprobanteMantenimiento(idOrdenServicio);
+    }
+
+    public byte[] generarComprobanteMantenimientoPDF(Map<String, Object> comprobante) throws Exception {
+        return exportador.generarComprobanteMantenimientoPDF(comprobante);
+    }
+
     public byte[] generarPDFBytesMantenimiento(List<Map<String, Object>> ordenes) throws Exception {
         String[] headers = {"N° Orden", "Fecha", "Hora", "Cliente", "DNI", "Vehículo", "Servicios", "Técnicos", "Total", "Estado"};
         String[] keys = {"idOrdenServicio", "fecha", "hora", "cliente", "dniCliente", "descripcionVehiculo", "servicios", "tecnicos", "precioTotal", "estado"};

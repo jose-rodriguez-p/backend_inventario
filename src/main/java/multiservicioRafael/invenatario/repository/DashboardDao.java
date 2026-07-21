@@ -247,13 +247,7 @@ public class DashboardDao implements DashboardDaoInterface {
 
         return combinarPorPeriodo(desde, hasta, ingresadosPorPeriodo, vendidosPorPeriodo, "ingresados", "vendidos", granularidad);
     }
-
-    // Arma la serie período a período (día, semana o mes según granularidad),
-    // asegurando que ambos lados tengan todos los períodos del rango, aunque
-    // uno de los dos no tenga datos en alguno de ellos. La clave "mes" del
-    // mapa se mantiene con ese nombre por compatibilidad con el frontend
-    // (Dashboard.formatearEtiquetaPeriodo lee d.mes sin importar la
-    // granularidad real).
+    
     private List<Map<String, Object>> combinarPorPeriodo(LocalDate desde, LocalDate hasta,
                                                          Map<String, Double> a, Map<String, Double> b, String claveA, String claveB, String granularidad) {
         List<Map<String, Object>> lista = new ArrayList<>();
