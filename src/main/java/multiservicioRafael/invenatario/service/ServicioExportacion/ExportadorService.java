@@ -232,7 +232,7 @@ public class ExportadorService {
         doc.add(cabecera);
         doc.add(new Paragraph(" "));
 
-        agregarLineaDato(doc, "Fecha de emisión", String.valueOf(c.getOrDefault("fecha_emision", "-")), fEtiqueta, fValor);
+        agregarLineaDato(doc, "Fecha de emisión", formatFechaHoraPeru(c.get("fecha_emision")), fEtiqueta, fValor);
         agregarLineaDato(doc, "Cliente", String.valueOf(c.getOrDefault("cliente", "-")), fEtiqueta, fValor);
         agregarLineaDato(doc, "DNI / Documento", String.valueOf(c.getOrDefault("dni", "-")), fEtiqueta, fValor);
         agregarLineaDato(doc, "Vendedor", String.valueOf(c.getOrDefault("vendedor", "-")), fEtiqueta, fValor);
@@ -332,7 +332,7 @@ public class ExportadorService {
         agregarLineaDato(doc, "DNI / Documento", String.valueOf(m.getOrDefault("dniCliente", m.getOrDefault("dni", "-"))), fEtiqueta, fValor);
         agregarLineaDato(doc, "Vehículo", String.valueOf(m.getOrDefault("descripcionVehiculo", m.getOrDefault("vehiculo", "-"))), fEtiqueta, fValor);
         agregarLineaDato(doc, "Técnicos", String.valueOf(m.getOrDefault("tecnicos", "-")), fEtiqueta, fValor);
-        agregarLineaDato(doc, "Fecha de servicio", String.valueOf(m.getOrDefault("fechaServicio", m.getOrDefault("fechaCulminacion", "-"))), fEtiqueta, fValor);
+        agregarLineaDato(doc, "Fecha de servicio", formatFechaHoraPeru(m.get("fechaServicio") != null ? m.get("fechaServicio") : m.get("fechaCulminacion")), fEtiqueta, fValor);
         agregarLineaDato(doc, "Método de pago", String.valueOf(m.getOrDefault("metodoPago", m.getOrDefault("metodo_pago", "Efectivo"))), fEtiqueta, fValor);
         doc.add(new Paragraph(" "));
 
@@ -570,5 +570,53 @@ public class ExportadorService {
 
     private String formatoMoneda(Object valor) {
         return String.format(java.util.Locale.US, "%.2f", numero(valor));
+    }
+
+    private String formatFechaHoraPeru(Object val) {
+        if (val == null) return "-";
+        String s = val.toString().trim();
+        if (s.isEmpty() || s.equals("-")) return "-";
+        try {
+            // Check if it has a time component
+            if (s.contains(":")) {
+                if (s.endsWith(".0")) {
+                    s = s.substring(0, s.length() - 2);
+                }
+                s = s.replace("T", " ");
+                java.time.format.DateTimeFormatter inputFormatter;
+                if (s.contains("-")) {
+                    if (s.length() == 19) {
+                        inputFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    } else if (s.length() > 19) {
+                        s = s.substring(0, 19);
+                        inputFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    } else {
+                        s += " 00:00:00";
+                        inputFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    }
+                } else {
+                    // Standard time only e.g. "15:37:25"
+                    java.time.LocalTime lt = java.time.LocalTime.parse(s);
+                    java.time.format.DateTimeFormatter timeFormatter = java.time.format.DateTimeFormatter.ofPattern("hh:mm:ss a", new java.util.Locale("es", "PE"));
+                    return lt.format(timeFormatter).toLowerCase(new java.util.Locale("es", "PE"))
+                            .replace("am", "a. m.").replace("pm", "p. m.");
+                }
+                java.time.LocalDateTime ldt = java.time.LocalDateTime.parse(s, inputFormatter);
+                java.time.format.DateTimeFormatter outputFormatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy hh:mm:ss a", new java.util.Locale("es", "PE"));
+                return ldt.format(outputFormatter).toLowerCase(new java.util.Locale("es", "PE"))
+                        .replace("am", "a. m.").replace("pm", "p. m.");
+            } else {
+                // Just date, format it as dd/MM/yyyy
+                if (s.contains("-") && s.length() == 10) {
+                    java.time.format.DateTimeFormatter inputFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                    java.time.LocalDate ld = java.time.LocalDate.parse(s, inputFormatter);
+                    java.time.format.DateTimeFormatter outputFormatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                    return ld.format(outputFormatter);
+                }
+            }
+        } catch (Exception e) {
+            // fallback
+        }
+        return s;
     }
 }
