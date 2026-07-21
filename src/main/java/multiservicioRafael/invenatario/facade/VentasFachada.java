@@ -17,16 +17,24 @@ public class VentasFachada {
         this.exportador = ExportadorService.getInstancia();
     }
 
-    public String registrarVenta(String usuarioNombre, String clienteDni, String tipoComprobante, String serie,
-                                 String estado, String metodoPago, String fechaEmision, double descuentoGlobal,
-                                 String tipoDescuento, String nota, List<Map<String, Object>> detalle) {
+    public Map<String, Object> registrarVenta(String usuarioNombre, String clienteDni, String tipoComprobante, String serie,
+                                              String estado, String metodoPago, String fechaEmision, double descuentoGlobal,
+                                              String tipoDescuento, String nota, List<Map<String, Object>> detalle) {
         return ventasDao.registrarVenta(usuarioNombre, clienteDni, tipoComprobante, serie,
-                                        estado, metodoPago, fechaEmision, descuentoGlobal,
-                                        tipoDescuento, nota, detalle);
+                estado, metodoPago, fechaEmision, descuentoGlobal,
+                tipoDescuento, nota, detalle);
     }
 
     public Map<String, Object> listarVentas(String busqueda, int pagina, int porPagina) {
         return ventasDao.listarVentas(busqueda, pagina, porPagina);
+    }
+
+    public Map<String, Object> obtenerComprobanteVenta(int idOrdenVenta) {
+        return ventasDao.obtenerComprobanteVenta(idOrdenVenta);
+    }
+
+    public byte[] generarComprobanteVentaPDF(Map<String, Object> comprobante) throws Exception {
+        return exportador.generarComprobanteVentaPDF(comprobante);
     }
 
     public byte[] generarPDFBytesVentas(List<Map<String, Object>> ventas) throws Exception {

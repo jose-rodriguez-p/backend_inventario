@@ -1,4 +1,3 @@
-
 package multiservicioRafael.invenatario.controller;
 
 import multiservicioRafael.invenatario.facade.VentasFachada;
@@ -26,13 +25,11 @@ public class ControladorVentas {
             String estado = (String) datos.get("estado");
             String metodoPago = (String) datos.get("metodo_pago");
             String fechaEmision = (String) datos.get("fecha_emision");
-            // Convert fecha to correct format for timestamp (add time if missing)
             if (fechaEmision != null && fechaEmision.length() == 10) {
                 fechaEmision += " 00:00:00";
             }
             double descuentoGlobal = ((Number) datos.getOrDefault("descuento_global", 0)).doubleValue();
             String tipoDescuento = (String) datos.getOrDefault("descuento_tipo", "%");
-            // Convert tipoDescuento to match backend expectation
             if (tipoDescuento != null) {
                 if (tipoDescuento.equals("%")) {
                     tipoDescuento = "porcentaje";
@@ -43,26 +40,26 @@ public class ControladorVentas {
             String nota = (String) datos.get("nota");
             List<Map<String, Object>> detalle = (List<Map<String, Object>>) datos.get("items");
 
-            String resultado = ventasFachada.registrarVenta(
+            Map<String, Object> resultado = ventasFachada.registrarVenta(
                     usuarioNombre, clienteDni, tipoComprobante, serie,
                     estado, metodoPago, fechaEmision, descuentoGlobal,
                     tipoDescuento, nota, detalle
             );
 
-            if (resultado.equals("OK")) {
-                // Get the last inserted order ID (we can adjust later if needed)
+            String status = String.valueOf(resultado.get("status"));
+            if ("OK".equals(status)) {
                 return ResponseEntity.ok(Map.of(
-                    "status", "OK",
-                    "message", "Venta registrada exitosamente",
-                    "id_orden_venta", 1 // Temporary
+                        "status", "OK",
+                        "message", "Venta registrada exitosamente",
+                        "id_orden_venta", resultado.get("id_orden_venta") != null ? resultado.get("id_orden_venta") : 0
                 ));
             } else {
-                return ResponseEntity.badRequest().body(Map.of("status", "ERROR", "message", resultado));
+                return ResponseEntity.badRequest().body(Map.of("status", "ERROR", "message", status));
             }
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                Map.of("status", "ERROR", "message", "Error interno del servidor: " + e.getMessage())
+                    Map.of("status", "ERROR", "message", "Error interno del servidor: " + e.getMessage())
             );
         }
     }
@@ -78,6 +75,24 @@ public class ControladorVentas {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of());
+        }
+    }
+
+    @GetMapping("/{id}/comprobante")
+    public ResponseEntity<byte[]> comprobante(@PathVariable("id") int idOrdenVenta) {
+        try {
+            Map<String, Object> comprobante = ventasFachada.obtenerComprobanteVenta(idOrdenVenta);
+            if (comprobante.get("id_orden_venta") == null) {
+                return ResponseEntity.notFound().build();
+            }
+            byte[] pdf = ventasFachada.generarComprobanteVentaPDF(comprobante);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "inline; filename=comprobante_venta_" + idOrdenVenta + ".pdf")
+                    .body(pdf);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
         }
     }
 
