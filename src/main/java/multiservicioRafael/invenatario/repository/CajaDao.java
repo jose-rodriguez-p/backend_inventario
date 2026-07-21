@@ -103,7 +103,6 @@ public class CajaDao implements CajaDaoInterface {
                 "ORDER BY ov.id_orden_venta";
 
         try (Connection conexion = ConexionDB.getInstance().getConnection()) {
-            Integer idUsuarioCaja = null;
             try (PreparedStatement ps = conexion.prepareStatement(sqlCabecera)) {
                 ps.setInt(1, idCierreCaja);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -115,7 +114,6 @@ public class CajaDao implements CajaDaoInterface {
                         resumen.put("tot_ventas_cajero", rs.getDouble("tot_ventas_cajero"));
                         resumen.put("estado_caja", rs.getString("estado_caja"));
                         resumen.put("usuario", (rs.getString("nombre_usuario") + " " + rs.getString("ap_usuario")).trim());
-                        idUsuarioCaja = rs.getInt("id_usuario");
                     }
                 }
             }
@@ -137,51 +135,48 @@ public class CajaDao implements CajaDaoInterface {
                 }
             }
 
-            // --- Mantenimientos COMPLETADOS del mismo cajero, culminados durante la caja abierta ---
+            // --- Mantenimientos COMPLETADOS enlazados a ESTA caja mediante caja_servicio ---
+            // (mismo mecanismo que caja_venta: el enlace se crea en el momento en que
+            // la orden se marca "Completado", con la caja abierta de quien hizo la acción,
+            // sin importar quién registró la orden originalmente)
             List<Map<String, Object>> mantenimientos = new ArrayList<>();
             double totMantenimientos = 0;
 
-            if (idUsuarioCaja != null) {
-                String sqlMant = "SELECT os.id_orden_servicio, os.fecha_culminacion, " +
-                        "os.precio_mano_obra, " +
-                        "COALESCE(c.nombre || ' ' || c.apellido_paterno, 'Cliente') AS cliente, " +
-                        "COALESCE(SUM(dr.precio_total), 0) AS total_repuestos " +
-                        "FROM public.orden_servicio os " +
-                        "LEFT JOIN public.cliente c ON c.id_cliente = os.id_cliente " +
-                        "LEFT JOIN public.detalle_orden_servicio dos ON dos.id_orden_servicio = os.id_orden_servicio " +
-                        "LEFT JOIN public.detalle_orden_repuesto dr ON dr.id_det_servicio = dos.id_det_servicio " +
-                        "WHERE os.estado = 'Completado' " +
-                        "AND os.fecha_culminacion IS NOT NULL " +
-                        "AND os.id_usuario = ? " +
-                        "AND os.fecha_culminacion >= ? " +
-                        "GROUP BY os.id_orden_servicio, os.fecha_culminacion, os.precio_mano_obra, c.nombre, c.apellido_paterno " +
-                        "ORDER BY os.id_orden_servicio";
+            String sqlMant = "SELECT os.id_orden_servicio, os.fecha_culminacion, " +
+                    "os.precio_mano_obra, " +
+                    "COALESCE(c.nombre || ' ' || c.apellido_paterno, 'Cliente') AS cliente, " +
+                    "COALESCE(SUM(dr.precio_total), 0) AS total_repuestos " +
+                    "FROM public.caja_servicio cs " +
+                    "JOIN public.orden_servicio os ON os.id_orden_servicio = cs.id_orden_serv " +
+                    "LEFT JOIN public.cliente c ON c.id_cliente = os.id_cliente " +
+                    "LEFT JOIN public.detalle_orden_servicio dos ON dos.id_orden_servicio = os.id_orden_servicio " +
+                    "LEFT JOIN public.detalle_orden_repuesto dr ON dr.id_det_servicio = dos.id_det_servicio " +
+                    "WHERE cs.id_cierre_caja = ? " +
+                    "AND os.estado = 'Completado' " +
+                    "GROUP BY os.id_orden_servicio, os.fecha_culminacion, os.precio_mano_obra, c.nombre, c.apellido_paterno " +
+                    "ORDER BY os.id_orden_servicio";
 
-                try (PreparedStatement psMant = conexion.prepareStatement(sqlMant)) {
-                    psMant.setInt(1, idUsuarioCaja);
-                    String fecAperStr = (String) resumen.get("fec_apertura");
-                    psMant.setTimestamp(2, fecAperStr != null
-                            ? Timestamp.valueOf(fecAperStr.replace(" ", "T").substring(0, 19))
-                            : new Timestamp(System.currentTimeMillis()));
-                    try (ResultSet rs = psMant.executeQuery()) {
-                        while (rs.next()) {
-                            Map<String, Object> m = new HashMap<>();
-                            m.put("n_orden", rs.getInt("id_orden_servicio"));
-                            m.put("fecha_emision", rs.getTimestamp("fecha_culminacion").toString());
-                            m.put("metodo_pago", "Servicio");
-                            m.put("comprobante", "Mantenimiento");
-                            m.put("cliente", rs.getString("cliente"));
-                            double manoObra = rs.getDouble("precio_mano_obra");
-                            double totalRepuestos = rs.getDouble("total_repuestos");
-                            double total = manoObra + totalRepuestos;
-                            m.put("total", total);
-                            totMantenimientos += total;
-                            mantenimientos.add(m);
-                        }
+            try (PreparedStatement psMant = conexion.prepareStatement(sqlMant)) {
+                psMant.setInt(1, idCierreCaja);
+                try (ResultSet rs = psMant.executeQuery()) {
+                    while (rs.next()) {
+                        Map<String, Object> m = new HashMap<>();
+                        m.put("n_orden", rs.getInt("id_orden_servicio"));
+                        Timestamp fCulm = rs.getTimestamp("fecha_culminacion");
+                        m.put("fecha_emision", fCulm != null ? fCulm.toString() : null);
+                        m.put("metodo_pago", "Servicio");
+                        m.put("comprobante", "Mantenimiento");
+                        m.put("cliente", rs.getString("cliente"));
+                        double manoObra = rs.getDouble("precio_mano_obra");
+                        double totalRepuestos = rs.getDouble("total_repuestos");
+                        double total = manoObra + totalRepuestos;
+                        m.put("total", total);
+                        totMantenimientos += total;
+                        mantenimientos.add(m);
                     }
-                } catch (Exception eMant) {
-                    eMant.printStackTrace();
                 }
+            } catch (Exception eMant) {
+                eMant.printStackTrace();
             }
 
             ventas.addAll(mantenimientos);
