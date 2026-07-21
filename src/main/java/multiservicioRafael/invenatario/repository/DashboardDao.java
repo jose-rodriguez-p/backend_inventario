@@ -32,20 +32,10 @@ public class DashboardDao implements DashboardDaoInterface {
         long dias = java.time.temporal.ChronoUnit.DAYS.between(desde, hasta) + 1;
         LocalDate prevDesde = desde.minusDays(dias);
         LocalDate prevHasta = desde.minusDays(1);
-
-        // Las gráficas de TENDENCIA (Ventas vs Compras, Ventas vs Servicios,
-        // Ingresados vs Vendidos) ahora sí respetan el rango seleccionado en
-        // los filtros (Hoy/Semana/Mes/Año/rango libre). Para que la línea no
-        // pierda sentido cuando el rango es muy corto o muy largo, la
-        // granularidad del agrupamiento se adapta automáticamente:
-        //  - <= 31 días  -> se agrupa por día
-        //  - <= 180 días -> se agrupa por semana
-        //  - resto       -> se agrupa por mes
-        // El frontend ya sabe leer "granularidadTendencia" para formatear
-        // las etiquetas del eje X (ver Dashboard.formatearEtiquetaPeriodo).
+        
         String granularidad = dias <= 31 ? "day" : dias <= 180 ? "week" : "month";
         resultado.put("granularidadTendencia", granularidad);
-
+        
         try (Connection cn = ConexionDB.getInstance().getConnection()) {
             cargarSeccion(resultado, "resumen", () -> obtenerResumen(cn, desde, hasta, prevDesde, prevHasta), new HashMap<>());
             cargarSeccion(resultado, "ventasMensuales", () -> obtenerVentasMensuales(cn, desde, hasta, granularidad), new ArrayList<>());
