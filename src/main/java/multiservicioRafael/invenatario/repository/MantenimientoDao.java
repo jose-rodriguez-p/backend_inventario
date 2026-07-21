@@ -184,12 +184,64 @@ public class MantenimientoDao implements MantenimientoDaoInterface {
                     }
                 }
             }
+
+            // Si la orden quedó Completada, la enlazamos a la caja abierta de quien
+            // realiza la acción (no de quien la registró originalmente), igual que
+            // se hace con las ventas en VentasDao.vincularVentaConCajaAbierta.
+            if ("OK".equals(resultado.get("status")) && "Completado".equalsIgnoreCase(nuevoEstado)) {
+                vincularServicioConCajaAbierta(cn, idOrdenServicio, usuarioNombre);
+            }
         } catch (Exception e) {
             System.out.println("Error editarEstadoOrden: " + e.getMessage());
             resultado.put("status", "ERROR");
             resultado.put("mensaje", e.getMessage());
         }
         return resultado;
+    }
+
+    /**
+     * Enlaza una orden de mantenimiento ya Completada con la caja abierta del
+     * usuario que la completó, insertando en caja_servicio (id_cierre_caja,
+     * id_orden_serv). Evita duplicados por si el estado se vuelve a guardar
+     * como "Completado" más de una vez para la misma orden.
+     */
+    private void vincularServicioConCajaAbierta(Connection conexion, int idOrdenServicio, String usuarioNombre) {
+        String sqlYaEnlazado = "SELECT 1 FROM public.caja_servicio WHERE id_orden_serv = ?";
+        try (PreparedStatement psCheck = conexion.prepareStatement(sqlYaEnlazado)) {
+            psCheck.setInt(1, idOrdenServicio);
+            try (ResultSet rsCheck = psCheck.executeQuery()) {
+                if (rsCheck.next()) {
+                    return; // ya estaba enlazada a una caja, no duplicar
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+
+        String sqlCaja = "SELECT cc.id_cierre_caja FROM public.cierre_caja cc " +
+                "JOIN public.usuario u ON u.id_usuario = cc.id_usuario " +
+                "WHERE u.usuario = ? AND cc.estado_caja = 'A' " +
+                "ORDER BY cc.id_cierre_caja DESC LIMIT 1";
+        try (PreparedStatement ps = conexion.prepareStatement(sqlCaja)) {
+            ps.setString(1, usuarioNombre);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int idCierreCaja = rs.getInt("id_cierre_caja");
+                    String sqlInsert = "INSERT INTO public.caja_servicio (id_cierre_caja, id_orden_serv) VALUES (?, ?)";
+                    try (PreparedStatement psInsert = conexion.prepareStatement(sqlInsert)) {
+                        psInsert.setInt(1, idCierreCaja);
+                        psInsert.setInt(2, idOrdenServicio);
+                        psInsert.executeUpdate();
+                    }
+                } else {
+                    System.out.println("Aviso: la orden " + idOrdenServicio +
+                            " se completó pero " + usuarioNombre + " no tiene caja abierta.");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
